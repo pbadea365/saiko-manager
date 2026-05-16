@@ -12,7 +12,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCQvrVCn7zYa39d6dFIOw9CcE-iVVAQaIA",
@@ -22,7 +22,6 @@ const firebaseConfig = {
   messagingSenderId: "226457269371",
   appId: "1:226457269371:web:e054ad6a09794605839ede"
 };
-
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const C   = {
@@ -47,25 +46,18 @@ window._db = {
   setSetting:    (key,d) => setDoc(doc(db,"settings",key),{...d,updatedAt:serverTimestamp()},{merge:true}),
 };
 
-// Projects
 onSnapshot(query(C.projects,orderBy("createdAt","desc")), snap => {
   window._projects = snap.docs.map(d=>({...d.data(),_id:d.id}));
   if(window._appReady){ window.filterCards(); if(window._currentView==='reports') window.renderReports(); }
 });
-
-// Clients
 onSnapshot(query(C.clients,orderBy("name")), snap => {
   window._clients = snap.docs.map(d=>({...d.data(),_id:d.id}));
   if(window._appReady && window._currentView==='clients') window.renderClients();
 });
-
-// Notifications
 onSnapshot(query(C.notifs,orderBy("createdAt","desc")), snap => {
   window._notifs = snap.docs.slice(0,15).map(d=>d.data());
   if(window._appReady) window.renderNotifs();
 });
-
-// Staff
 onSnapshot(query(C.staff,orderBy("lastName")), snap => {
   window._staff = snap.docs.map(d=>({...d.data(),_id:d.id}));
   if(window._appReady){
@@ -74,18 +66,16 @@ onSnapshot(query(C.staff,orderBy("lastName")), snap => {
     if(window._currentView==='staff') window.renderStaffCards();
   }
 });
-
-// Departments / settings
 onSnapshot(doc(db,"settings","departments"), snap => {
   if(snap.exists()){
-    window._departments = snap.data().list || [];
+    window._departments = snap.data().list||[];
   } else {
     window._departments = [
-      {id:'comenzi',     title:'Comenzi Noi',       color:'#5b9bdb', trigger:null},
-      {id:'grafica',     title:'Proiectare Grafică', color:'#b07fe0', trigger:'grafica'},
-      {id:'autocad',     title:'Proiectare Tehnică', color:'#e09a34', trigger:'autocad'},
-      {id:'atelier',     title:'Producție Atelier',  color:'#5ec97a', trigger:'atelier'},
-      {id:'implementare',title:'Implementare',        color:'#e05252', trigger:null},
+      {id:'comenzi',     title:'Comenzi Noi',       color:'#5b9bdb',trigger:null},
+      {id:'grafica',     title:'Proiectare Grafică', color:'#b07fe0',trigger:'grafica'},
+      {id:'autocad',     title:'Proiectare Tehnică', color:'#e09a34',trigger:'autocad'},
+      {id:'atelier',     title:'Producție Atelier',  color:'#5ec97a',trigger:'atelier'},
+      {id:'implementare',title:'Implementare',        color:'#e05252',trigger:null},
     ];
     window._db.setSetting('departments',{list:window._departments});
   }
@@ -95,29 +85,30 @@ onSnapshot(doc(db,"settings","departments"), snap => {
     if(window._currentView==='admin')  window.renderDeptTable();
   }
 });
-
-// Admin password
 onSnapshot(doc(db,"settings","admin"), snap => {
-  window._adminPass = snap.exists() ? (snap.data().password||'saiko2025') : 'saiko2025';
+  window._adminPass = snap.exists()?(snap.data().password||'saiko2025'):'saiko2025';
   if(!snap.exists()) window._db.setSetting('admin',{password:'saiko2025'});
 });
+onSnapshot(doc(db,"settings","ui"), snap => {
+  if(snap.exists()) window._ui = snap.data();
+  else window._ui = {};
+  if(window._appReady) window.applyUI();
+});
 
-window._projects    = [];
-window._clients     = [];
-window._notifs      = [];
-window._staff       = [];
-window._departments = [];
-window._adminPass   = 'saiko2025';
-window._appReady    = false;
-window._currentView = 'kanban';
-
+window._projects=[]; window._clients=[]; window._notifs=[];
+window._staff=[]; window._departments=[]; window._adminPass='saiko2025';
+window._ui={}; window._appReady=false; window._currentView='kanban';
 window.dispatchEvent(new Event('firebase-ready'));
 </script>
 
 <style>
-:root{--blk:#0d0d0d;--dark:#141414;--card:#1c1c1c;--b1:#252525;--b2:#333;--g3:#555;--g4:#888;--g5:#bbb;--grn:#5ec97a;--grn2:#1d3d29;--red:#e05252;--amber:#e09a34;--blue:#5b9bdb;--rad:10px;--rads:6px;}
+:root{
+  --blk:#0d0d0d;--dark:#141414;--card:#1c1c1c;--b1:#252525;--b2:#333;--g3:#555;--g4:#888;--g5:#bbb;
+  --grn:#5ec97a;--grn2:#1d3d29;--red:#e05252;--amber:#e09a34;--blue:#5b9bdb;
+  --rad:10px;--rads:6px;--card-rad:6px;--base-font:13px;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--dark);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-serif;font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+body{background:var(--dark);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-serif;font-size:var(--base-font);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 #loader{position:fixed;inset:0;background:var(--blk);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 .loader-logo{width:64px;height:64px;background:var(--grn);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#0d0d0d;}
 .spinner{width:32px;height:32px;border:3px solid var(--b2);border-top-color:var(--grn);border-radius:50%;animation:spin .8s linear infinite;}
@@ -136,7 +127,6 @@ body{background:var(--dark);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-se
 .fi input,.fi select{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:9px 11px;font-size:13px;color:#f0f0f0;outline:none;}
 .fi input:focus,.fi select:focus{border-color:var(--grn);}
 .btn-login{width:100%;background:var(--grn);border:none;color:#0d0d0d;font-weight:700;padding:10px;border-radius:var(--rads);cursor:pointer;font-size:13px;margin-top:6px;}
-.btn-login:hover{background:#4db868;}
 .admin-pass-screen{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:center;justify-content:center;}
 .admin-pass-screen.open{display:flex;}
 .admin-pass-box{background:var(--card);border:1px solid var(--b2);border-radius:16px;padding:32px;width:340px;text-align:center;}
@@ -154,13 +144,13 @@ header{background:#111;border-bottom:1px solid var(--b1);padding:0 18px;height:5
 .icon-btn:hover{border-color:var(--g3);color:var(--g5);}
 .notif-dot{width:6px;height:6px;background:var(--red);border-radius:50%;position:absolute;top:-2px;right:-2px;display:none;}
 .btn-new{background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-.btn-new:hover{background:#4db868;}
+.btn-new:hover{filter:brightness(1.1);}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--b2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--grn);border:1.5px solid var(--grn2);}
 .vt-group{display:flex;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);overflow:hidden;}
 .vt-btn{background:none;border:none;color:var(--g4);padding:5px 9px;cursor:pointer;font-size:14px;}
 .vt-btn.active{background:var(--b2);color:#f0f0f0;}
 .app-body{display:flex;flex:1;overflow:hidden;}
-aside{width:206px;background:#111;border-right:1px solid var(--b1);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+aside{width:210px;background:#111;border-right:1px solid var(--b1);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
 .sb-sec{padding:14px 12px 6px;}
 .sb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g3);margin-bottom:7px;}
 .nav-item{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:var(--rads);cursor:pointer;color:var(--g4);font-size:12px;margin-bottom:2px;transition:all .12s;}
@@ -192,7 +182,7 @@ aside{width:206px;background:#111;border-right:1px solid var(--b1);display:flex;
 .col-body::-webkit-scrollbar{width:3px;}
 .col-body::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
 .drop-zone.drag-over{outline:2px dashed var(--grn);background:rgba(94,201,122,.04);}
-.card{background:#161616;border:1px solid var(--b1);border-radius:var(--rads);padding:10px 11px;cursor:grab;transition:border-color .15s,transform .1s;user-select:none;}
+.card{background:#161616;border:1px solid var(--b1);border-radius:var(--card-rad);padding:10px 11px;cursor:grab;transition:border-color .15s,transform .1s;user-select:none;}
 .card:hover{border-color:var(--b2);transform:translateY(-1px);}
 .card.dragging{opacity:.4;transform:rotate(1.5deg);}
 .ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
@@ -261,10 +251,28 @@ aside{width:206px;background:#111;border-right:1px solid var(--b1);display:flex;
 .prog-big-fill{height:100%;background:var(--grn);border-radius:3px;transition:width .3s;}
 .move-btn{background:var(--grn2);color:var(--grn);border:1px solid var(--grn2);border-radius:var(--rads);padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;margin-top:16px;width:100%;}
 .move-btn:hover{background:#1a4730;}
-body.tv .card{padding:14px 16px;}
-body.tv .cc{font-size:16px;}
-body.tv .col{min-width:280px;max-width:300px;}
-body.tv .col-title{font-size:15px;}
+/* SETTINGS UI */
+.ui-section{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);margin-bottom:16px;overflow:hidden;}
+.ui-section-hdr{padding:13px 18px;border-bottom:1px solid var(--b1);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.ui-section-hdr i{color:var(--grn);}
+.ui-body{padding:16px 18px;}
+.ui-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:16px;}
+.ui-row:last-child{margin-bottom:0;}
+.ui-lbl{font-size:12px;color:var(--g5);min-width:160px;}
+.ui-lbl small{display:block;font-size:10px;color:var(--g4);margin-top:2px;}
+.ui-ctrl{display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;}
+input[type=range]{-webkit-appearance:none;width:140px;height:4px;background:var(--b2);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--grn);cursor:pointer;}
+input[type=color]{width:40px;height:32px;border:1px solid var(--b2);border-radius:var(--rads);background:none;cursor:pointer;padding:2px;}
+.preview-card{background:#161616;border:1px solid var(--b2);border-radius:var(--card-rad);padding:10px 12px;font-size:11px;width:160px;flex-shrink:0;}
+.preview-card .pc-title{font-weight:600;margin-bottom:4px;}
+.preview-card .pc-tag{display:inline-block;background:var(--grn2);color:var(--grn);font-size:9px;padding:1px 6px;border-radius:8px;}
+/* labels grid */
+.lbl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lbl-item label{display:block;font-size:10px;color:var(--g4);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+.lbl-item input{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px;font-size:12px;color:#f0f0f0;outline:none;}
+.lbl-item input:focus{border-color:var(--grn);}
+/* reports */
 .rpt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
 .metric{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:16px;}
 .metric-lbl{font-size:11px;color:var(--g4);margin-bottom:6px;}
@@ -277,6 +285,10 @@ body.tv .col-title{font-size:15px;}
 .bt{flex:1;height:8px;background:var(--b1);border-radius:4px;overflow:hidden;}
 .bf{height:100%;border-radius:4px;}
 .bv{font-size:11px;color:var(--g5);width:24px;text-align:right;}
+body.tv .card{padding:14px 16px;}
+body.tv .cc{font-size:16px;}
+body.tv .col{min-width:280px;max-width:300px;}
+body.tv .col-title{font-size:15px;}
 .toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:600;}
 .toast{background:#1a1a1a;border:1px solid var(--b2);border-radius:var(--rad);padding:11px 15px;font-size:12px;display:flex;align-items:center;gap:10px;min-width:260px;animation:tIn .25s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);}
 .toast.success i{color:var(--grn);}
@@ -303,18 +315,18 @@ body.tv .col-title{font-size:15px;}
     <div class="auth-err" id="authErr">Utilizator sau parolă incorectă.</div>
     <div class="fi"><label>Selectează</label><select id="loginUser"><option value="">— alege —</option></select></div>
     <div class="fi"><label>Parolă</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn-login" onclick="doLogin()"><i class="ti ti-login"></i> Intră în sistem</button>
+    <button class="btn-login" onclick="doLogin()"><i class="ti ti-login"></i> <span data-t="login">Intră în sistem</span></button>
   </div>
 </div>
 
 <div class="admin-pass-screen" id="adminPassScreen">
   <div class="admin-pass-box">
     <h2><i class="ti ti-shield-lock" style="color:var(--amber)"></i> Admin Panel</h2>
-    <p>Introduceți parola de Admin.</p>
-    <div class="fi"><label>Parolă</label><input type="password" id="adminPassInp" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"></div>
+    <p data-t="adminPassHint">Introduceți parola de Admin.</p>
+    <div class="fi"><label data-t="password">Parolă</label><input type="password" id="adminPassInp" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"></div>
     <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn-c" style="flex:1" onclick="$('adminPassScreen').classList.remove('open')">Anulează</button>
-      <button class="btn-s" style="flex:1" onclick="checkAdminPass()"><i class="ti ti-check"></i> Intră</button>
+      <button class="btn-c" style="flex:1" onclick="$('adminPassScreen').classList.remove('open')" data-t="cancel">Anulează</button>
+      <button class="btn-s" style="flex:1" onclick="checkAdminPass()"><i class="ti ti-check"></i> <span data-t="enter">Intră</span></button>
     </div>
   </div>
 </div>
@@ -331,41 +343,42 @@ body.tv .col-title{font-size:15px;}
     </div>
     <button class="icon-btn" id="tvBtn" onclick="toggleTV()" title="TV Mode"><i class="ti ti-device-tv"></i></button>
     <button class="icon-btn" onclick="toggleNotif()"><i class="ti ti-bell"></i><div class="notif-dot" id="notifDot"></div></button>
-    <button class="btn-new" onclick="openModal('project')"><i class="ti ti-plus"></i> Proiect Nou</button>
+    <button class="btn-new" onclick="openModal('project')"><i class="ti ti-plus"></i> <span data-t="newProject">Proiect Nou</span></button>
     <div class="avatar" id="userAvatar">—</div>
   </div>
 </header>
 
 <div class="notif-panel" id="notifPanel">
-  <div class="np-head">Notificări <span id="notifCount">0</span></div>
+  <div class="np-head"><span data-t="notifications">Notificări</span> <span id="notifCount">0</span></div>
   <div id="notifList"></div>
 </div>
 
 <div class="app-body">
 <aside>
   <div class="sb-sec">
-    <div class="sb-lbl">Producție</div>
+    <div class="sb-lbl" data-t="production">Producție</div>
     <div class="nav-item active" id="nav-kanban"   onclick="switchView('kanban')"><i class="ti ti-layout-kanban"></i> Kanban <span class="badge g" id="sb-active">0</span></div>
-    <div class="nav-item"        id="nav-calendar" onclick="switchView('calendar')"><i class="ti ti-calendar"></i> Calendar</div>
-    <div class="nav-item"        id="nav-reports"  onclick="switchView('reports')"><i class="ti ti-chart-bar"></i> Rapoarte</div>
+    <div class="nav-item"        id="nav-calendar" onclick="switchView('calendar')"><i class="ti ti-calendar"></i> <span data-t="calendar">Calendar</span></div>
+    <div class="nav-item"        id="nav-reports"  onclick="switchView('reports')"><i class="ti ti-chart-bar"></i> <span data-t="reports">Rapoarte</span></div>
   </div>
   <hr class="sbdiv">
   <div class="sb-sec">
-    <div class="sb-lbl">Date</div>
-    <div class="nav-item" id="nav-clients" onclick="switchView('clients')"><i class="ti ti-users"></i> Clienți</div>
-    <div class="nav-item" id="nav-staff"   onclick="switchView('staff')"><i class="ti ti-id-badge"></i> Echipă</div>
+    <div class="sb-lbl" data-t="data">Date</div>
+    <div class="nav-item" id="nav-clients" onclick="switchView('clients')"><i class="ti ti-users"></i> <span data-t="clients">Clienți</span></div>
+    <div class="nav-item" id="nav-staff"   onclick="switchView('staff')"><i class="ti ti-id-badge"></i> <span data-t="team">Echipă</span></div>
   </div>
   <hr class="sbdiv">
   <div class="sb-sec">
-    <div class="sb-lbl">Sistem</div>
-    <div class="nav-item" id="nav-admin" onclick="openAdminPanel()"><i class="ti ti-settings" style="color:var(--amber)"></i> <span style="color:var(--amber)">Admin Panel</span></div>
+    <div class="sb-lbl" data-t="system">Sistem</div>
+    <div class="nav-item" id="nav-admin"    onclick="openAdminPanel()"><i class="ti ti-settings" style="color:var(--amber)"></i> <span style="color:var(--amber)">Admin Panel</span></div>
+    <div class="nav-item" id="nav-settings" onclick="switchView('settings')"><i class="ti ti-palette"></i> <span data-t="uiSettings">Interfață</span></div>
   </div>
   <hr class="sbdiv">
   <div class="sb-sec">
-    <div class="sb-lbl">Sumar Live</div>
-    <div class="stat-m"><span>Proiecte</span><span id="sb-cnt">0</span></div>
-    <div class="stat-m"><span>Urgente</span><span style="color:var(--red)" id="sb-urg">0</span></div>
-    <div class="stat-m"><span>Echipă</span><span id="sb-staff">0</span></div>
+    <div class="sb-lbl" data-t="summary">Sumar Live</div>
+    <div class="stat-m"><span data-t="projects">Proiecte</span><span id="sb-cnt">0</span></div>
+    <div class="stat-m"><span data-t="urgent">Urgente</span><span style="color:var(--red)" id="sb-urg">0</span></div>
+    <div class="stat-m"><span data-t="team">Echipă</span><span id="sb-staff">0</span></div>
   </div>
   <div class="sb-foot">
     <div class="cu-box">
@@ -377,12 +390,14 @@ body.tv .col-title{font-size:15px;}
 
 <div id="mainContent">
   <div class="toolbar" id="boardToolbar">
-    <div class="search-w"><i class="ti ti-search"></i><input class="search-inp" id="searchInp" placeholder="Caută proiect sau client…" oninput="filterCards()"></div>
+    <div class="search-w"><i class="ti ti-search"></i><input class="search-inp" id="searchInp" placeholder="Caută…" oninput="filterCards()"></div>
     <select class="fsel" id="urgFilter" onchange="filterCards()">
-      <option value="">Toate urgențele</option>
-      <option value="h">🔴 Urgent</option><option value="m">🟡 Mediu</option><option value="l">🟢 Normal</option>
+      <option value="" data-t="allUrgencies">Toate urgențele</option>
+      <option value="h" data-t="urgent">🔴 Urgent</option>
+      <option value="m" data-t="medium">🟡 Mediu</option>
+      <option value="l" data-t="normal">🟢 Normal</option>
     </select>
-    <select class="fsel" id="assignFilter" onchange="filterCards()"><option value="">Toți responsabilii</option></select>
+    <select class="fsel" id="assignFilter" onchange="filterCards()"><option value="" data-t="allStaff">Toți responsabilii</option></select>
     <span style="font-size:11px;color:var(--g3);margin-left:auto" id="filterStatus">0 proiecte</span>
   </div>
 
@@ -390,16 +405,16 @@ body.tv .col-title{font-size:15px;}
 
   <div id="reportsView" class="view-panel">
     <div class="rpt-grid">
-      <div class="metric"><div class="metric-lbl">Proiecte Active</div><div class="metric-val" style="color:var(--grn)" id="rpt-active">0</div></div>
-      <div class="metric"><div class="metric-lbl">Urgente</div><div class="metric-val" style="color:var(--red)" id="rpt-urg">0</div></div>
-      <div class="metric"><div class="metric-lbl">Clienți</div><div class="metric-val" id="rpt-cl">0</div></div>
-      <div class="metric"><div class="metric-lbl">Echipă</div><div class="metric-val" id="rpt-st">0</div></div>
+      <div class="metric"><div class="metric-lbl" data-t="activeProjects">Proiecte Active</div><div class="metric-val" style="color:var(--grn)" id="rpt-active">0</div></div>
+      <div class="metric"><div class="metric-lbl" data-t="urgent">Urgente</div><div class="metric-val" style="color:var(--red)" id="rpt-urg">0</div></div>
+      <div class="metric"><div class="metric-lbl" data-t="clients">Clienți</div><div class="metric-val" id="rpt-cl">0</div></div>
+      <div class="metric"><div class="metric-lbl" data-t="team">Echipă</div><div class="metric-val" id="rpt-st">0</div></div>
     </div>
     <div class="rpt-row">
-      <div class="rpt-card"><h3>Distribuție pe Etape</h3><div id="rpt-stages"></div></div>
-      <div class="rpt-card"><h3>Distribuție Urgențe</h3><div id="rpt-urgs"></div></div>
+      <div class="rpt-card"><h3 data-t="stageDistrib">Distribuție pe Etape</h3><div id="rpt-stages"></div></div>
+      <div class="rpt-card"><h3 data-t="urgencyDistrib">Distribuție Urgențe</h3><div id="rpt-urgs"></div></div>
     </div>
-    <div class="rpt-card"><h3>Echipă & Proiecte</h3><div id="rpt-team" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px"></div></div>
+    <div class="rpt-card"><h3 data-t="teamProjects">Echipă & Proiecte</h3><div id="rpt-team" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px"></div></div>
   </div>
 
   <div id="calendarView" class="view-panel">
@@ -409,97 +424,186 @@ body.tv .col-title{font-size:15px;}
         <span id="calTitle" style="font-size:15px;font-weight:700;min-width:160px;text-align:center"></span>
         <button onclick="calNav(1)"  style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-chevron-right"></i></button>
       </div>
-      <button onclick="calGoToday()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;padding:6px 14px;cursor:pointer;font-size:12px;">Azi</button>
+      <button onclick="calGoToday()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;padding:6px 14px;cursor:pointer;font-size:12px;" data-t="today">Azi</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;">
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--g4);padding:6px 0">LUN</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--g4);padding:6px 0">MAR</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--g4);padding:6px 0">MIE</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--g4);padding:6px 0">JOI</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--g4);padding:6px 0">VIN</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--red);padding:6px 0">SÂM</div>
-      <div style="text-align:center;font-size:10.5px;font-weight:700;color:var(--red);padding:6px 0">DUM</div>
-    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;" id="calDayNames"></div>
     <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1;"></div>
   </div>
 
   <div id="clientsView" class="view-panel">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div><div style="font-size:15px;font-weight:700">Baza de Date Clienți</div><div style="font-size:11px;color:var(--g4);margin-top:2px">Sincronizat Firestore</div></div>
+      <div><div style="font-size:15px;font-weight:700" data-t="clientsDB">Baza de Date Clienți</div><div style="font-size:11px;color:var(--g4);margin-top:2px">Firestore</div></div>
       <div style="display:flex;gap:8px;">
-        <div style="position:relative"><i class="ti ti-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--g3);font-size:13px"></i><input id="clientSearch" oninput="renderClients()" placeholder="Caută…" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px 6px 28px;font-size:12px;color:#f0f0f0;outline:none;width:180px;"></div>
-        <button onclick="openModal('client')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> Client Nou</button>
+        <div style="position:relative"><i class="ti ti-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--g3);font-size:13px"></i><input id="clientSearch" oninput="renderClients()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px 6px 28px;font-size:12px;color:#f0f0f0;outline:none;width:180px;"></div>
+        <button onclick="openModal('client')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> <span data-t="newClient">Client Nou</span></button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px">Total Clienți</div><div style="font-size:22px;font-weight:700;color:var(--grn)" id="stat-total">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px">Cu Proiecte</div><div style="font-size:22px;font-weight:700" id="stat-active">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px">Total Proiecte</div><div style="font-size:22px;font-weight:700;color:var(--amber)" id="stat-proj">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px">Urgente</div><div style="font-size:22px;font-weight:700;color:var(--red)" id="stat-urg2">0</div></div>
+      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="totalClients">Total Clienți</div><div style="font-size:22px;font-weight:700;color:var(--grn)" id="stat-total">0</div></div>
+      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="withProjects">Cu Proiecte</div><div style="font-size:22px;font-weight:700" id="stat-active">0</div></div>
+      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="totalProjects">Total Proiecte</div><div style="font-size:22px;font-weight:700;color:var(--amber)" id="stat-proj">0</div></div>
+      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="urgent">Urgente</div><div style="font-size:22px;font-weight:700;color:var(--red)" id="stat-urg2">0</div></div>
     </div>
     <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);overflow:hidden;">
-      <div class="tbl-hdr clients-cols"><span>Client</span><span>Contact</span><span>Proiecte</span><span>Deadline</span><span>Status</span><span></span></div>
+      <div class="tbl-hdr clients-cols"><span data-t="client">Client</span><span data-t="contact">Contact</span><span data-t="projects">Proiecte</span><span data-t="deadline">Deadline</span><span>Status</span><span></span></div>
       <div id="clientsList"></div>
     </div>
   </div>
 
   <div id="staffView" class="view-panel">
-    <div style="margin-bottom:18px;"><div style="font-size:15px;font-weight:700">Echipa Saiko</div><div style="font-size:11px;color:var(--g4);margin-top:2px">Angajați activi</div></div>
+    <div style="margin-bottom:18px;"><div style="font-size:15px;font-weight:700" data-t="teamSaiko">Echipa Saiko</div></div>
     <div id="staffCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
   </div>
 
+  <!-- SETTINGS UI -->
+  <div id="settingsView" class="view-panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <div style="width:36px;height:36px;background:#1a1e2e;border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-palette" style="color:var(--blue);font-size:18px"></i></div>
+      <div><div style="font-size:15px;font-weight:700" data-t="uiSettings">Setări Interfață</div><div style="font-size:11px;color:var(--g4)">Salvat automat în Firestore</div></div>
+    </div>
+
+    <!-- Langue -->
+    <div class="ui-section">
+      <div class="ui-section-hdr"><i class="ti ti-world"></i> <span data-t="language">Limbă</span></div>
+      <div class="ui-body">
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="selectLanguage">Selectează limba interfeței</span></div>
+          <div class="ui-ctrl">
+            <select id="uiLang" onchange="onLangChange()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:7px 10px;font-size:13px;color:#f0f0f0;outline:none;cursor:pointer;min-width:180px;">
+              <option value="ro">🇷🇴 Română</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="hu">🇭🇺 Magyar</option>
+              <option value="bg">🇧🇬 Български</option>
+              <option value="uk">🇺🇦 Українська</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colors -->
+    <div class="ui-section">
+      <div class="ui-section-hdr"><i class="ti ti-color-swatch"></i> <span data-t="colors">Culori</span></div>
+      <div class="ui-body">
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="accentColor">Culoare accent</span><small data-t="accentColorHint">Butoane, progres, highlight</small></div>
+          <div class="ui-ctrl"><input type="color" id="uiAccent" value="#5ec97a" oninput="previewUI()"><span id="uiAccentVal" style="font-size:11px;color:var(--g4)">#5ec97a</span></div>
+        </div>
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="urgentColor">Culoare Urgent</span></div>
+          <div class="ui-ctrl"><input type="color" id="uiRed" value="#e05252" oninput="previewUI()"><span id="uiRedVal" style="font-size:11px;color:var(--g4)">#e05252</span></div>
+        </div>
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="mediumColor">Culoare Mediu</span></div>
+          <div class="ui-ctrl"><input type="color" id="uiAmber" value="#e09a34" oninput="previewUI()"><span id="uiAmberVal" style="font-size:11px;color:var(--g4)">#e09a34</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography & Shape -->
+    <div class="ui-section">
+      <div class="ui-section-hdr"><i class="ti ti-typography"></i> <span data-t="typographyShape">Font & Formă</span></div>
+      <div class="ui-body">
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="fontSize">Mărime font</span><small id="fontSizeVal">13px</small></div>
+          <div class="ui-ctrl">
+            <span style="font-size:10px;color:var(--g4)">A</span>
+            <input type="range" id="uiFontSize" min="11" max="18" value="13" oninput="previewUI()">
+            <span style="font-size:15px;color:var(--g4)">A</span>
+          </div>
+        </div>
+        <div class="ui-row">
+          <div class="ui-lbl"><span data-t="cardRadius">Rotunjire carduri</span><small id="cardRadVal">6px</small></div>
+          <div class="ui-ctrl">
+            <span style="font-size:11px;color:var(--g4)">▬</span>
+            <input type="range" id="uiCardRad" min="0" max="20" value="6" oninput="previewUI()">
+            <span style="font-size:11px;color:var(--g4)">⬭</span>
+          </div>
+        </div>
+        <!-- Preview card -->
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--b1);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:11px;color:var(--g4)" data-t="preview">Previzualizare:</span>
+          <div class="preview-card" id="previewCard">
+            <div class="pc-title">Client Exemplu</div>
+            <div style="font-size:9px;color:var(--g4);margin-bottom:6px">Litere volumetrice</div>
+            <span class="pc-tag" id="previewTag">Activ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Labels -->
+    <div class="ui-section">
+      <div class="ui-section-hdr"><i class="ti ti-forms"></i> <span data-t="customLabels">Etichete personalizate</span></div>
+      <div class="ui-body">
+        <div class="lbl-grid" id="labelsGrid"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px">
+      <button onclick="resetUI()" style="background:var(--b1);border:none;color:var(--g4);padding:8px 16px;border-radius:var(--rads);cursor:pointer;font-size:12px;" data-t="reset">Resetează</button>
+      <button onclick="saveUI()" style="background:var(--grn);border:none;color:#0d0d0d;font-weight:700;padding:8px 18px;border-radius:var(--rads);cursor:pointer;font-size:12px;"><i class="ti ti-check"></i> <span data-t="saveSettings">Salvează Setările</span></button>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
   <div id="adminView" class="view-panel">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
       <div style="width:36px;height:36px;background:#3d2a00;border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-shield-lock" style="color:var(--amber);font-size:18px"></i></div>
-      <div><div style="font-size:15px;font-weight:700">Panou Administrare</div><div style="font-size:11px;color:var(--g4)">Acces restricționat</div></div>
+      <div><div style="font-size:15px;font-weight:700">Admin Panel</div><div style="font-size:11px;color:var(--g4)" data-t="restrictedAccess">Acces restricționat</div></div>
     </div>
     <div class="admin-section">
       <div class="admin-section-hdr">
-        <h3><i class="ti ti-users"></i> Angajați</h3>
-        <button onclick="openModal('staff')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-user-plus"></i> Angajat Nou</button>
+        <h3><i class="ti ti-users"></i> <span data-t="employees">Angajați</span></h3>
+        <button onclick="openModal('staff')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-user-plus"></i> <span data-t="newEmployee">Angajat Nou</span></button>
       </div>
-      <div class="tbl-hdr staff-cols"><span>Prenume</span><span>Nume</span><span>Departament</span><span>Email</span><span>Telefon</span><span>Acțiuni</span></div>
+      <div class="tbl-hdr staff-cols"><span data-t="firstName">Prenume</span><span data-t="lastName">Nume</span><span data-t="department">Departament</span><span>Email</span><span data-t="phone">Telefon</span><span data-t="actions">Acțiuni</span></div>
       <div id="staffTable"></div>
     </div>
     <div class="admin-section">
       <div class="admin-section-hdr">
-        <h3><i class="ti ti-layout-columns"></i> Coloane Kanban</h3>
-        <button onclick="openModal('dept')" style="background:var(--b2);color:#f0f0f0;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> Coloană Nouă</button>
+        <h3><i class="ti ti-layout-columns"></i> <span data-t="kanbanCols">Coloane Kanban</span></h3>
+        <button onclick="openModal('dept')" style="background:var(--b2);color:#f0f0f0;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> <span data-t="newColumn">Coloană Nouă</span></button>
       </div>
-      <div class="tbl-hdr dept-cols"><span>Ordine</span><span>Denumire</span><span>Culoare</span><span>Parolă login</span><span>Acțiuni</span></div>
+      <div class="tbl-hdr dept-cols"><span data-t="order">Ordine</span><span data-t="name">Denumire</span><span data-t="color">Culoare</span><span data-t="loginPass">Parolă login</span><span data-t="actions">Acțiuni</span></div>
       <div id="deptTable"></div>
     </div>
     <div class="admin-section">
-      <div class="admin-section-hdr"><h3><i class="ti ti-key"></i> Parolă Admin</h3></div>
+      <div class="admin-section-hdr"><h3><i class="ti ti-key"></i> <span data-t="adminPassword">Parolă Admin</span></h3></div>
       <div style="padding:16px;display:flex;gap:10px;align-items:flex-end;">
-        <div class="fr" style="margin:0;flex:1"><label>Parolă nouă</label><input type="password" id="newAdminPass" placeholder="min. 6 caractere"></div>
-        <button onclick="changeAdminPass()" style="background:var(--amber);color:#0d0d0d;border:none;border-radius:var(--rads);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;">Salvează</button>
+        <div class="fr" style="margin:0;flex:1"><label data-t="newPassword">Parolă nouă</label><input type="password" id="newAdminPass" placeholder="min. 6 caractere"></div>
+        <button onclick="changeAdminPass()" style="background:var(--amber);color:#0d0d0d;border:none;border-radius:var(--rads);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;" data-t="save">Salvează</button>
       </div>
     </div>
   </div>
-</div>
-</div>
+</div><!-- /mainContent -->
+</div><!-- /app-body -->
 
 <!-- MODAL PROIECT -->
 <div class="modal-bg" id="projectModal" onclick="if(event.target===this)closeModal('project')">
   <div class="modal">
-    <h2><i class="ti ti-circle-plus"></i> Proiect Nou</h2>
+    <h2><i class="ti ti-circle-plus"></i> <span data-t="newProject">Proiect Nou</span></h2>
     <div class="fc2">
-      <div class="fr"><label>Client *</label><input type="text" id="nClient"></div>
-      <div class="fr"><label>Tip Produs</label><select id="nType"><option>Litere volumetrice</option><option>Casetă luminoasă</option><option>Totem publicitar</option><option>Panou LED</option><option>Signalistică</option><option>Branding showroom</option><option>Litere canal inox</option><option>Altele</option></select></div>
+      <div class="fr"><label data-t="client">Client *</label><input type="text" id="nClient"></div>
+      <div class="fr"><label data-t="productType">Tip Produs</label><select id="nType"><option>Litere volumetrice</option><option>Casetă luminoasă</option><option>Totem publicitar</option><option>Panou LED</option><option>Signalistică</option><option>Branding showroom</option><option>Litere canal inox</option><option>Altele</option></select></div>
     </div>
     <div class="fc2">
-      <div class="fr"><label>Dată Limită</label><input type="date" id="nDate"></div>
-      <div class="fr"><label>Responsabil</label><select id="nResp"><option value="">— alege —</option></select></div>
+      <div class="fr"><label data-t="deadline">Dată Limită</label><input type="date" id="nDate"></div>
+      <div class="fr"><label data-t="responsible">Responsabil</label><select id="nResp"><option value="">— alege —</option></select></div>
     </div>
     <div class="fc2">
-      <div class="fr"><label>Materiale</label><input type="text" id="nMat"></div>
-      <div class="fr"><label>Urgență</label><select id="nUrg"><option value="l">🟢 Normal</option><option value="m">🟡 Mediu</option><option value="h">🔴 Urgent</option></select></div>
+      <div class="fr"><label data-t="materials">Materiale</label><input type="text" id="nMat"></div>
+      <div class="fr"><label data-t="urgency">Urgență</label><select id="nUrg"><option value="l">🟢 Normal</option><option value="m">🟡 Mediu</option><option value="h">🔴 Urgent</option></select></div>
     </div>
-    <div class="fr"><label>Note</label><textarea id="nNotes"></textarea></div>
+    <div class="fr"><label data-t="notes">Note</label><textarea id="nNotes"></textarea></div>
     <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('project')">Anulează</button>
-      <button class="btn-s" onclick="saveProject()"><i class="ti ti-check"></i> Salvează</button>
+      <button class="btn-c" onclick="closeModal('project')" data-t="cancel">Anulează</button>
+      <button class="btn-s" onclick="saveProject()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
     </div>
   </div>
 </div>
@@ -507,20 +611,20 @@ body.tv .col-title{font-size:15px;}
 <!-- MODAL CLIENT -->
 <div class="modal-bg" id="clientModal" onclick="if(event.target===this)closeModal('client')">
   <div class="modal">
-    <h2><i class="ti ti-user-plus"></i> <span id="clientModalTitle">Client Nou</span></h2>
+    <h2><i class="ti ti-user-plus"></i> <span id="clientModalTitle" data-t="newClient">Client Nou</span></h2>
     <div class="fc2">
-      <div class="fr"><label>Nume Companie *</label><input type="text" id="cName"></div>
-      <div class="fr"><label>Persoană Contact</label><input type="text" id="cContact"></div>
+      <div class="fr"><label data-t="companyName">Nume Companie *</label><input type="text" id="cName"></div>
+      <div class="fr"><label data-t="contactPerson">Persoană Contact</label><input type="text" id="cContact"></div>
     </div>
     <div class="fc2">
       <div class="fr"><label>Email</label><input type="email" id="cEmail"></div>
-      <div class="fr"><label>Telefon</label><input type="text" id="cPhone"></div>
+      <div class="fr"><label data-t="phone">Telefon</label><input type="text" id="cPhone"></div>
     </div>
-    <div class="fr"><label>Adresă</label><input type="text" id="cAddr"></div>
-    <div class="fr"><label>Industrie</label><select id="cIndustry"><option>Retail</option><option>HoReCa</option><option>Auto</option><option>Imobiliare</option><option>Farmacie</option><option>Logistică</option><option>Alt domeniu</option></select></div>
+    <div class="fr"><label data-t="address">Adresă</label><input type="text" id="cAddr"></div>
+    <div class="fr"><label data-t="industry">Industrie</label><select id="cIndustry"><option>Retail</option><option>HoReCa</option><option>Auto</option><option>Imobiliare</option><option>Farmacie</option><option>Logistică</option><option>Alt domeniu</option></select></div>
     <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('client')">Anulează</button>
-      <button class="btn-s" onclick="saveClient()"><i class="ti ti-check"></i> Salvează</button>
+      <button class="btn-c" onclick="closeModal('client')" data-t="cancel">Anulează</button>
+      <button class="btn-s" onclick="saveClient()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
     </div>
   </div>
 </div>
@@ -528,23 +632,23 @@ body.tv .col-title{font-size:15px;}
 <!-- MODAL ANGAJAT -->
 <div class="modal-bg" id="staffModal" onclick="if(event.target===this)closeModal('staff')">
   <div class="modal">
-    <h2><i class="ti ti-user-plus"></i> <span id="staffModalTitle">Angajat Nou</span></h2>
+    <h2><i class="ti ti-user-plus"></i> <span id="staffModalTitle" data-t="newEmployee">Angajat Nou</span></h2>
     <div class="fc2">
-      <div class="fr"><label>Prenume *</label><input type="text" id="sFirst"></div>
-      <div class="fr"><label>Nume *</label><input type="text" id="sLast"></div>
+      <div class="fr"><label data-t="firstName">Prenume *</label><input type="text" id="sFirst"></div>
+      <div class="fr"><label data-t="lastName">Nume *</label><input type="text" id="sLast"></div>
     </div>
     <div class="fc2">
-      <div class="fr"><label>Departament</label><select id="sDept"><option value="">— alege —</option></select></div>
-      <div class="fr"><label>Rol / Funcție</label><input type="text" id="sRole"></div>
+      <div class="fr"><label data-t="department">Departament</label><select id="sDept"><option value="">— alege —</option></select></div>
+      <div class="fr"><label data-t="role">Rol / Funcție</label><input type="text" id="sRole"></div>
     </div>
     <div class="fc2">
       <div class="fr"><label>Email</label><input type="email" id="sEmail"></div>
-      <div class="fr"><label>Telefon</label><input type="text" id="sPhone"></div>
+      <div class="fr"><label data-t="phone">Telefon</label><input type="text" id="sPhone"></div>
     </div>
-    <div class="fr"><label>Parolă login *</label><input type="password" id="sPass"></div>
+    <div class="fr"><label data-t="loginPassword">Parolă login *</label><input type="password" id="sPass"></div>
     <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('staff')">Anulează</button>
-      <button class="btn-s" onclick="saveStaff()"><i class="ti ti-check"></i> Salvează</button>
+      <button class="btn-c" onclick="closeModal('staff')" data-t="cancel">Anulează</button>
+      <button class="btn-s" onclick="saveStaff()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
     </div>
   </div>
 </div>
@@ -552,15 +656,15 @@ body.tv .col-title{font-size:15px;}
 <!-- MODAL DEPARTAMENT -->
 <div class="modal-bg" id="deptModal" onclick="if(event.target===this)closeModal('dept')">
   <div class="modal" style="max-width:400px">
-    <h2><i class="ti ti-layout-columns"></i> <span id="deptModalTitle">Coloană Nouă</span></h2>
-    <div class="fr"><label>Denumire *</label><input type="text" id="dTitle"></div>
+    <h2><i class="ti ti-layout-columns"></i> <span id="deptModalTitle" data-t="newColumn">Coloană Nouă</span></h2>
+    <div class="fr"><label data-t="name">Denumire *</label><input type="text" id="dTitle"></div>
     <div class="fc2">
-      <div class="fr"><label>Culoare</label><input type="color" id="dColor" value="#5ec97a" style="height:38px;padding:2px 4px;cursor:pointer;"></div>
-      <div class="fr"><label>Parolă login dept.</label><input type="text" id="dPassword" placeholder="ex: grafica123"></div>
+      <div class="fr"><label data-t="color">Culoare</label><input type="color" id="dColor" value="#5ec97a" style="height:38px;padding:2px 4px;cursor:pointer;"></div>
+      <div class="fr"><label data-t="loginPass">Parolă login dept.</label><input type="text" id="dPassword" placeholder="ex: grafica123"></div>
     </div>
     <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('dept')">Anulează</button>
-      <button class="btn-s" onclick="saveDept()"><i class="ti ti-check"></i> Salvează</button>
+      <button class="btn-c" onclick="closeModal('dept')" data-t="cancel">Anulează</button>
+      <button class="btn-s" onclick="saveDept()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
     </div>
   </div>
 </div>
@@ -573,133 +677,227 @@ body.tv .col-title{font-size:15px;}
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-function initials(f,l){ return (((f||'')[0]||'')+((l||'')[0]||'')).toUpperCase() || '?'; }
-function staffFullName(s){ return (s.firstName+' '+s.lastName).trim(); }
-function deptColor(id){ return (window._departments||[]).find(d=>d.id===id)?.color || '#888'; }
-function deptTitle(id){ return (window._departments||[]).find(d=>d.id===id)?.title || id; }
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let _cu = null, _tvMode = false, _editIds = {};
-let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
-
-const ADMIN = { _id:'__admin__', firstName:'Admin', lastName:'', role:'Admin', department:null, password:'saiko2025' };
-
-// ── BOOT ──────────────────────────────────────────────────────────────────────
-window.addEventListener('firebase-ready', () => {
-  $('loader').style.display = 'none';
-  $('authScreen').classList.add('open');
-});
-
-// ── LOGIN DROPDOWN ────────────────────────────────────────────────────────────
-window.rebuildLoginDropdown = function() {
-  const lu = $('loginUser'); if(!lu) return;
-  const prev = lu.value;
-  lu.innerHTML = '<option value="">— alege —</option>';
-  // Admin
-  const ao = document.createElement('option');
-  ao.value = '__admin__'; ao.textContent = '👑 Admin';
-  lu.appendChild(ao);
-  // Departamente
-  (window._departments||[]).forEach(d => {
-    const o = document.createElement('option');
-    o.value = 'dept__'+d.id;
-    o.textContent = d.title;
-    lu.appendChild(o);
-  });
-  if(prev) lu.value = prev;
+// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+const LANGS = {
+  ro:{login:'Intră în sistem',cancel:'Anulează',save:'Salvează',newProject:'Proiect Nou',newClient:'Client Nou',newEmployee:'Angajat Nou',newColumn:'Coloană Nouă',clients:'Clienți',team:'Echipă',projects:'Proiecte',urgent:'Urgente',normal:'Normal',medium:'Mediu',reports:'Rapoarte',calendar:'Calendar',production:'Producție',data:'Date',system:'Sistem',summary:'Sumar Live',uiSettings:'Interfață',colors:'Culori',language:'Limbă',selectLanguage:'Selectează limba',accentColor:'Culoare accent',accentColorHint:'Butoane, progres, highlight',urgentColor:'Culoare Urgent',mediumColor:'Culoare Mediu',typographyShape:'Font & Formă',fontSize:'Mărime font',cardRadius:'Rotunjire carduri',customLabels:'Etichete personalizate',preview:'Previzualizare',saveSettings:'Salvează Setările',reset:'Resetează',notifications:'Notificări',today:'Azi',allUrgencies:'Toate urgențele',allStaff:'Toți responsabilii',activeProjects:'Proiecte Active',stageDistrib:'Distribuție pe Etape',urgencyDistrib:'Distribuție Urgențe',teamProjects:'Echipă & Proiecte',clientsDB:'Baza de Date Clienți',totalClients:'Total Clienți',withProjects:'Cu Proiecte',totalProjects:'Total Proiecte',client:'Client',contact:'Contact',deadline:'Deadline',employees:'Angajați',kanbanCols:'Coloane Kanban',order:'Ordine',name:'Denumire',color:'Culoare',loginPass:'Parolă login',actions:'Acțiuni',adminPassword:'Parolă Admin',newPassword:'Parolă nouă',restrictedAccess:'Acces restricționat',productType:'Tip Produs',responsible:'Responsabil',materials:'Materiale',urgency:'Urgență',notes:'Note',companyName:'Nume Companie',contactPerson:'Persoană Contact',address:'Adresă',industry:'Industrie',firstName:'Prenume',lastName:'Nume',department:'Departament',role:'Rol / Funcție',loginPassword:'Parolă login',phone:'Telefon',password:'Parolă',adminPassHint:'Introduceți parola de Admin.',enter:'Intră',teamSaiko:'Echipa Saiko',activeProjects:'Proiecte Active'},
+  en:{login:'Login',cancel:'Cancel',save:'Save',newProject:'New Project',newClient:'New Client',newEmployee:'New Employee',newColumn:'New Column',clients:'Clients',team:'Team',projects:'Projects',urgent:'Urgent',normal:'Normal',medium:'Medium',reports:'Reports',calendar:'Calendar',production:'Production',data:'Data',system:'System',summary:'Live Summary',uiSettings:'Interface',colors:'Colors',language:'Language',selectLanguage:'Select language',accentColor:'Accent color',accentColorHint:'Buttons, progress, highlight',urgentColor:'Urgent color',mediumColor:'Medium color',typographyShape:'Font & Shape',fontSize:'Font size',cardRadius:'Card radius',customLabels:'Custom labels',preview:'Preview',saveSettings:'Save Settings',reset:'Reset',notifications:'Notifications',today:'Today',allUrgencies:'All urgencies',allStaff:'All staff',activeProjects:'Active Projects',stageDistrib:'Stage Distribution',urgencyDistrib:'Urgency Distribution',teamProjects:'Team & Projects',clientsDB:'Client Database',totalClients:'Total Clients',withProjects:'With Projects',totalProjects:'Total Projects',client:'Client',contact:'Contact',deadline:'Deadline',employees:'Employees',kanbanCols:'Kanban Columns',order:'Order',name:'Name',color:'Color',loginPass:'Login password',actions:'Actions',adminPassword:'Admin Password',newPassword:'New password',restrictedAccess:'Restricted access',productType:'Product Type',responsible:'Responsible',materials:'Materials',urgency:'Urgency',notes:'Notes',companyName:'Company Name',contactPerson:'Contact Person',address:'Address',industry:'Industry',firstName:'First Name',lastName:'Last Name',department:'Department',role:'Role / Function',loginPassword:'Login password',phone:'Phone',password:'Password',adminPassHint:'Enter admin password.',enter:'Enter',teamSaiko:'Saiko Team'},
+  de:{login:'Anmelden',cancel:'Abbrechen',save:'Speichern',newProject:'Neues Projekt',newClient:'Neuer Kunde',newEmployee:'Neuer Mitarbeiter',newColumn:'Neue Spalte',clients:'Kunden',team:'Team',projects:'Projekte',urgent:'Dringend',normal:'Normal',medium:'Mittel',reports:'Berichte',calendar:'Kalender',production:'Produktion',data:'Daten',system:'System',summary:'Live-Übersicht',uiSettings:'Oberfläche',colors:'Farben',language:'Sprache',selectLanguage:'Sprache wählen',accentColor:'Akzentfarbe',accentColorHint:'Schaltflächen, Fortschritt',urgentColor:'Dringend-Farbe',mediumColor:'Mittel-Farbe',typographyShape:'Schrift & Form',fontSize:'Schriftgröße',cardRadius:'Kartenradius',customLabels:'Benutzerdefinierte Labels',preview:'Vorschau',saveSettings:'Einstellungen speichern',reset:'Zurücksetzen',notifications:'Benachrichtigungen',today:'Heute',allUrgencies:'Alle Dringlichkeiten',allStaff:'Alle Mitarbeiter',activeProjects:'Aktive Projekte',stageDistrib:'Stufenverteilung',urgencyDistrib:'Dringlichkeitsverteilung',teamProjects:'Team & Projekte',clientsDB:'Kundendatenbank',totalClients:'Kunden gesamt',withProjects:'Mit Projekten',totalProjects:'Projekte gesamt',client:'Kunde',contact:'Kontakt',deadline:'Frist',employees:'Mitarbeiter',kanbanCols:'Kanban-Spalten',order:'Reihenfolge',name:'Name',color:'Farbe',loginPass:'Login-Passwort',actions:'Aktionen',adminPassword:'Admin-Passwort',newPassword:'Neues Passwort',restrictedAccess:'Eingeschränkter Zugang',productType:'Produkttyp',responsible:'Verantwortlich',materials:'Materialien',urgency:'Dringlichkeit',notes:'Notizen',companyName:'Firmenname',contactPerson:'Ansprechpartner',address:'Adresse',industry:'Branche',firstName:'Vorname',lastName:'Nachname',department:'Abteilung',role:'Rolle / Funktion',loginPassword:'Login-Passwort',phone:'Telefon',password:'Passwort',adminPassHint:'Admin-Passwort eingeben.',enter:'Eintreten',teamSaiko:'Saiko Team'},
+  fr:{login:'Connexion',cancel:'Annuler',save:'Enregistrer',newProject:'Nouveau Projet',newClient:'Nouveau Client',newEmployee:'Nouvel Employé',newColumn:'Nouvelle Colonne',clients:'Clients',team:'Équipe',projects:'Projets',urgent:'Urgent',normal:'Normal',medium:'Moyen',reports:'Rapports',calendar:'Calendrier',production:'Production',data:'Données',system:'Système',summary:'Résumé Live',uiSettings:'Interface',colors:'Couleurs',language:'Langue',selectLanguage:'Choisir la langue',accentColor:"Couleur d'accentuation",accentColorHint:'Boutons, progression',urgentColor:'Couleur Urgent',mediumColor:'Couleur Moyen',typographyShape:'Police & Forme',fontSize:'Taille de police',cardRadius:'Rayon des cartes',customLabels:'Étiquettes personnalisées',preview:'Aperçu',saveSettings:'Enregistrer les paramètres',reset:'Réinitialiser',notifications:'Notifications',today:"Aujourd'hui",allUrgencies:'Toutes les urgences',allStaff:'Tout le personnel',activeProjects:'Projets actifs',stageDistrib:'Distribution par étape',urgencyDistrib:'Distribution urgences',teamProjects:'Équipe & Projets',clientsDB:'Base de données clients',totalClients:'Total clients',withProjects:'Avec projets',totalProjects:'Total projets',client:'Client',contact:'Contact',deadline:'Échéance',employees:'Employés',kanbanCols:'Colonnes Kanban',order:'Ordre',name:'Nom',color:'Couleur',loginPass:'Mot de passe connexion',actions:'Actions',adminPassword:'Mot de passe Admin',newPassword:'Nouveau mot de passe',restrictedAccess:'Accès restreint',productType:'Type de produit',responsible:'Responsable',materials:'Matériaux',urgency:'Urgence',notes:'Notes',companyName:'Nom de société',contactPerson:'Personne de contact',address:'Adresse',industry:'Industrie',firstName:'Prénom',lastName:'Nom',department:'Département',role:'Rôle / Fonction',loginPassword:'Mot de passe connexion',phone:'Téléphone',password:'Mot de passe',adminPassHint:"Entrez le mot de passe admin.",enter:'Entrer',teamSaiko:'Équipe Saiko'},
+  it:{login:'Accedi',cancel:'Annulla',save:'Salva',newProject:'Nuovo Progetto',newClient:'Nuovo Cliente',newEmployee:'Nuovo Dipendente',newColumn:'Nuova Colonna',clients:'Clienti',team:'Squadra',projects:'Progetti',urgent:'Urgente',normal:'Normale',medium:'Medio',reports:'Rapporti',calendar:'Calendario',production:'Produzione',data:'Dati',system:'Sistema',summary:'Riepilogo Live',uiSettings:'Interfaccia',colors:'Colori',language:'Lingua',selectLanguage:'Seleziona lingua',accentColor:'Colore accento',accentColorHint:'Pulsanti, avanzamento',urgentColor:'Colore Urgente',mediumColor:'Colore Medio',typographyShape:'Carattere & Forma',fontSize:'Dimensione carattere',cardRadius:'Raggio schede',customLabels:'Etichette personalizzate',preview:'Anteprima',saveSettings:'Salva impostazioni',reset:'Ripristina',notifications:'Notifiche',today:'Oggi',allUrgencies:'Tutte le urgenze',allStaff:'Tutto il personale',activeProjects:'Progetti attivi',stageDistrib:'Distribuzione per fase',urgencyDistrib:'Distribuzione urgenze',teamProjects:'Squadra & Progetti',clientsDB:'Database clienti',totalClients:'Totale clienti',withProjects:'Con progetti',totalProjects:'Totale progetti',client:'Cliente',contact:'Contatto',deadline:'Scadenza',employees:'Dipendenti',kanbanCols:'Colonne Kanban',order:'Ordine',name:'Nome',color:'Colore',loginPass:'Password accesso',actions:'Azioni',adminPassword:'Password Admin',newPassword:'Nuova password',restrictedAccess:'Accesso limitato',productType:'Tipo prodotto',responsible:'Responsabile',materials:'Materiali',urgency:'Urgenza',notes:'Note',companyName:'Nome azienda',contactPerson:'Persona di contatto',address:'Indirizzo',industry:'Settore',firstName:'Nome',lastName:'Cognome',department:'Reparto',role:'Ruolo / Funzione',loginPassword:'Password accesso',phone:'Telefono',password:'Password',adminPassHint:'Inserire password admin.',enter:'Entra',teamSaiko:'Team Saiko'},
+  es:{login:'Iniciar sesión',cancel:'Cancelar',save:'Guardar',newProject:'Nuevo Proyecto',newClient:'Nuevo Cliente',newEmployee:'Nuevo Empleado',newColumn:'Nueva Columna',clients:'Clientes',team:'Equipo',projects:'Proyectos',urgent:'Urgente',normal:'Normal',medium:'Medio',reports:'Informes',calendar:'Calendario',production:'Producción',data:'Datos',system:'Sistema',summary:'Resumen en vivo',uiSettings:'Interfaz',colors:'Colores',language:'Idioma',selectLanguage:'Seleccionar idioma',accentColor:'Color de acento',accentColorHint:'Botones, progreso',urgentColor:'Color Urgente',mediumColor:'Color Medio',typographyShape:'Fuente & Forma',fontSize:'Tamaño de fuente',cardRadius:'Radio de tarjetas',customLabels:'Etiquetas personalizadas',preview:'Vista previa',saveSettings:'Guardar configuración',reset:'Restablecer',notifications:'Notificaciones',today:'Hoy',allUrgencies:'Todas las urgencias',allStaff:'Todo el personal',activeProjects:'Proyectos activos',stageDistrib:'Distribución por etapa',urgencyDistrib:'Distribución urgencias',teamProjects:'Equipo & Proyectos',clientsDB:'Base de datos clientes',totalClients:'Total clientes',withProjects:'Con proyectos',totalProjects:'Total proyectos',client:'Cliente',contact:'Contacto',deadline:'Fecha límite',employees:'Empleados',kanbanCols:'Columnas Kanban',order:'Orden',name:'Nombre',color:'Color',loginPass:'Contraseña acceso',actions:'Acciones',adminPassword:'Contraseña Admin',newPassword:'Nueva contraseña',restrictedAccess:'Acceso restringido',productType:'Tipo de producto',responsible:'Responsable',materials:'Materiales',urgency:'Urgencia',notes:'Notas',companyName:'Nombre empresa',contactPerson:'Persona de contacto',address:'Dirección',industry:'Industria',firstName:'Nombre',lastName:'Apellido',department:'Departamento',role:'Rol / Función',loginPassword:'Contraseña acceso',phone:'Teléfono',password:'Contraseña',adminPassHint:'Introduzca la contraseña admin.',enter:'Entrar',teamSaiko:'Equipo Saiko'},
+  hu:{login:'Bejelentkezés',cancel:'Mégse',save:'Mentés',newProject:'Új Projekt',newClient:'Új Ügyfél',newEmployee:'Új Alkalmazott',newColumn:'Új Oszlop',clients:'Ügyfelek',team:'Csapat',projects:'Projektek',urgent:'Sürgős',normal:'Normál',medium:'Közepes',reports:'Jelentések',calendar:'Naptár',production:'Gyártás',data:'Adatok',system:'Rendszer',summary:'Élő összefoglaló',uiSettings:'Felület',colors:'Színek',language:'Nyelv',selectLanguage:'Válasszon nyelvet',accentColor:'Kiemelő szín',accentColorHint:'Gombok, folyamat',urgentColor:'Sürgős szín',mediumColor:'Közepes szín',typographyShape:'Betű & Forma',fontSize:'Betűméret',cardRadius:'Kártya lekerekítés',customLabels:'Egyéni feliratok',preview:'Előnézet',saveSettings:'Beállítások mentése',reset:'Visszaállítás',notifications:'Értesítések',today:'Ma',allUrgencies:'Összes sürgősség',allStaff:'Összes felelős',activeProjects:'Aktív projektek',stageDistrib:'Fázis elosztás',urgencyDistrib:'Sürgősség elosztás',teamProjects:'Csapat & Projektek',clientsDB:'Ügyfél adatbázis',totalClients:'Összes ügyfél',withProjects:'Projektekkel',totalProjects:'Összes projekt',client:'Ügyfél',contact:'Kapcsolat',deadline:'Határidő',employees:'Alkalmazottak',kanbanCols:'Kanban oszlopok',order:'Sorrend',name:'Megnevezés',color:'Szín',loginPass:'Bejelentkezési jelszó',actions:'Műveletek',adminPassword:'Admin jelszó',newPassword:'Új jelszó',restrictedAccess:'Korlátozott hozzáférés',productType:'Terméktípus',responsible:'Felelős',materials:'Anyagok',urgency:'Sürgősség',notes:'Megjegyzések',companyName:'Cégnév',contactPerson:'Kapcsolattartó',address:'Cím',industry:'Iparág',firstName:'Keresztnév',lastName:'Vezetéknév',department:'Részleg',role:'Szerepkör',loginPassword:'Bejelentkezési jelszó',phone:'Telefon',password:'Jelszó',adminPassHint:'Adja meg az admin jelszót.',enter:'Belépés',teamSaiko:'Saiko Csapat'},
+  bg:{login:'Вход',cancel:'Отказ',save:'Запази',newProject:'Нов проект',newClient:'Нов клиент',newEmployee:'Нов служител',newColumn:'Нова колона',clients:'Клиенти',team:'Екип',projects:'Проекти',urgent:'Спешно',normal:'Нормално',medium:'Средно',reports:'Отчети',calendar:'Календар',production:'Производство',data:'Данни',system:'Система',summary:'Обобщение',uiSettings:'Интерфейс',colors:'Цветове',language:'Език',selectLanguage:'Изберете език',accentColor:'Акцентен цвят',accentColorHint:'Бутони, прогрес',urgentColor:'Цвят Спешно',mediumColor:'Цвят Средно',typographyShape:'Шрифт & Форма',fontSize:'Размер шрифт',cardRadius:'Закръгляне карти',customLabels:'Персонализирани етикети',preview:'Преглед',saveSettings:'Запази настройките',reset:'Нулиране',notifications:'Известия',today:'Днес',allUrgencies:'Всички спешности',allStaff:'Всички отговорни',activeProjects:'Активни проекти',stageDistrib:'Разпределение по етапи',urgencyDistrib:'Разпределение спешност',teamProjects:'Екип & Проекти',clientsDB:'База данни клиенти',totalClients:'Общо клиенти',withProjects:'С проекти',totalProjects:'Общо проекти',client:'Клиент',contact:'Контакт',deadline:'Краен срок',employees:'Служители',kanbanCols:'Канбан колони',order:'Ред',name:'Наименование',color:'Цвят',loginPass:'Парола за вход',actions:'Действия',adminPassword:'Парола Admin',newPassword:'Нова парола',restrictedAccess:'Ограничен достъп',productType:'Тип продукт',responsible:'Отговорник',materials:'Материали',urgency:'Спешност',notes:'Бележки',companyName:'Фирма',contactPerson:'Лице за контакт',address:'Адрес',industry:'Индустрия',firstName:'Собствено',lastName:'Фамилия',department:'Отдел',role:'Роля',loginPassword:'Парола за вход',phone:'Телефон',password:'Парола',adminPassHint:'Въведете парола за администратор.',enter:'Влез',teamSaiko:'Екип Saiko'},
+  uk:{login:'Увійти',cancel:'Скасувати',save:'Зберегти',newProject:'Новий проект',newClient:'Новий клієнт',newEmployee:'Новий співробітник',newColumn:'Новий стовпець',clients:'Клієнти',team:'Команда',projects:'Проекти',urgent:'Терміново',normal:'Нормально',medium:'Середньо',reports:'Звіти',calendar:'Календар',production:'Виробництво',data:'Дані',system:'Система',summary:'Зведення',uiSettings:'Інтерфейс',colors:'Кольори',language:'Мова',selectLanguage:'Виберіть мову',accentColor:'Акцентний колір',accentColorHint:'Кнопки, прогрес',urgentColor:'Колір Термінового',mediumColor:'Колір Середнього',typographyShape:'Шрифт і форма',fontSize:'Розмір шрифту',cardRadius:'Заокруглення карток',customLabels:'Власні мітки',preview:'Попередній перегляд',saveSettings:'Зберегти налаштування',reset:'Скинути',notifications:'Сповіщення',today:'Сьогодні',allUrgencies:'Всі терміновості',allStaff:'Всі відповідальні',activeProjects:'Активні проекти',stageDistrib:'Розподіл за етапами',urgencyDistrib:'Розподіл терміновості',teamProjects:'Команда & Проекти',clientsDB:'База даних клієнтів',totalClients:'Всього клієнтів',withProjects:'З проектами',totalProjects:'Всього проектів',client:'Клієнт',contact:'Контакт',deadline:'Дедлайн',employees:'Співробітники',kanbanCols:'Стовпці Kanban',order:'Порядок',name:'Назва',color:'Колір',loginPass:'Пароль входу',actions:'Дії',adminPassword:'Пароль адміна',newPassword:'Новий пароль',restrictedAccess:'Обмежений доступ',productType:'Тип продукту',responsible:'Відповідальний',materials:'Матеріали',urgency:'Терміновість',notes:'Нотатки',companyName:'Назва компанії',contactPerson:'Контактна особа',address:'Адреса',industry:'Галузь',firstName:"Ім'я",lastName:'Прізвище',department:'Відділ',role:'Роль / Функція',loginPassword:'Пароль входу',phone:'Телефон',password:'Пароль',adminPassHint:'Введіть пароль адміністратора.',enter:'Увійти',teamSaiko:'Команда Saiko'},
+  nl:{login:'Inloggen',cancel:'Annuleren',save:'Opslaan',newProject:'Nieuw Project',newClient:'Nieuwe Klant',newEmployee:'Nieuwe Medewerker',newColumn:'Nieuwe Kolom',clients:'Klanten',team:'Team',projects:'Projecten',urgent:'Dringend',normal:'Normaal',medium:'Gemiddeld',reports:'Rapporten',calendar:'Kalender',production:'Productie',data:'Gegevens',system:'Systeem',summary:'Live Samenvatting',uiSettings:'Interface',colors:'Kleuren',language:'Taal',selectLanguage:'Kies taal',accentColor:'Accentkleur',accentColorHint:'Knoppen, voortgang',urgentColor:'Dringend kleur',mediumColor:'Gemiddeld kleur',typographyShape:'Lettertype & Vorm',fontSize:'Lettergrootte',cardRadius:'Kaartafronding',customLabels:'Aangepaste labels',preview:'Voorbeeld',saveSettings:'Instellingen opslaan',reset:'Resetten',notifications:'Meldingen',today:'Vandaag',allUrgencies:'Alle urgentieniveaus',allStaff:'Al het personeel',activeProjects:'Actieve projecten',stageDistrib:'Verdeling per fase',urgencyDistrib:'Urgentieverdeling',teamProjects:'Team & Projecten',clientsDB:'Klantendatabase',totalClients:'Totaal klanten',withProjects:'Met projecten',totalProjects:'Totaal projecten',client:'Klant',contact:'Contact',deadline:'Deadline',employees:'Medewerkers',kanbanCols:'Kanban kolommen',order:'Volgorde',name:'Naam',color:'Kleur',loginPass:'Inlogwachtwoord',actions:'Acties',adminPassword:'Admin wachtwoord',newPassword:'Nieuw wachtwoord',restrictedAccess:'Beperkte toegang',productType:'Producttype',responsible:'Verantwoordelijke',materials:'Materialen',urgency:'Urgentie',notes:'Notities',companyName:'Bedrijfsnaam',contactPerson:'Contactpersoon',address:'Adres',industry:'Industrie',firstName:'Voornaam',lastName:'Achternaam',department:'Afdeling',role:'Rol / Functie',loginPassword:'Inlogwachtwoord',phone:'Telefoon',password:'Wachtwoord',adminPassHint:'Voer het adminwachtwoord in.',enter:'Inloggen',teamSaiko:'Saiko Team'},
 };
 
-// ── ASSIGN SELECTS (responsabil, filter) ─────────────────────────────────────
-window.rebuildAssignSelects = function() {
-  const staff = window._staff||[];
-  // assign filter
-  const af = $('assignFilter');
-  if(af){
-    const pv = af.value;
-    af.innerHTML = '<option value="">Toți responsabilii</option>';
-    staff.forEach(s => { const o=document.createElement('option'); o.value=staffFullName(s); o.textContent=staffFullName(s); af.appendChild(o); });
-    if(pv) af.value = pv;
-  }
-  // responsabil în modal proiect
-  const nr = $('nResp');
-  if(nr){
-    const pv = nr.value;
-    nr.innerHTML = '<option value="">— alege —</option>';
-    staff.forEach(s => { const o=document.createElement('option'); o.value=staffFullName(s); o.textContent=staffFullName(s)+' ('+( deptTitle(s.department))+')'; nr.appendChild(o); });
-    if(pv) nr.value = pv;
-  }
-  // sidebar staff count
-  const ss = $('sb-staff'); if(ss) ss.textContent = staff.length;
+// Labels that can be customized by the user
+const DEFAULT_LABELS = ['clients','team','projects','urgent','reports','calendar','newProject','deadline','responsible','urgency'];
+
+let _lang = 'ro';
+
+function t(key){ return (LANGS[_lang]||LANGS.ro)[key] || (LANGS.ro)[key] || key; }
+
+function applyTranslations(){
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const key=el.getAttribute('data-t');
+    const custom=window._ui?.labels?.[key];
+    el.textContent = custom || t(key);
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function initials(f,l){ return (((f||'')[0]||'')+((l||'')[0]||'')).toUpperCase()||'?'; }
+function staffFullName(s){ return ((s.firstName||'')+' '+(s.lastName||'')).trim(); }
+function deptColor(id){ return (window._departments||[]).find(d=>d.id===id)?.color||'#888'; }
+function deptTitle(id){ return (window._departments||[]).find(d=>d.id===id)?.title||id; }
+
+let _cu=null,_tvMode=false,_editIds={};
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+const ADMIN={_id:'__admin__',firstName:'Admin',lastName:'',role:'Admin',department:null,password:'saiko2025'};
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('firebase-ready',()=>{
+  $('loader').style.display='none';
+  $('authScreen').classList.add('open');
+  buildLabelsGrid();
+});
+
+// ── APPLY UI SETTINGS ─────────────────────────────────────────────────────────
+window.applyUI = function(){
+  const ui=window._ui||{};
+  // Language
+  if(ui.lang){ _lang=ui.lang; $('uiLang').value=ui.lang; }
+  // Colors
+  const grn=ui.accent||'#5ec97a';
+  const red=ui.red||'#e05252';
+  const amb=ui.amber||'#e09a34';
+  document.documentElement.style.setProperty('--grn',grn);
+  document.documentElement.style.setProperty('--grn2',grn+'29');
+  document.documentElement.style.setProperty('--red',red);
+  document.documentElement.style.setProperty('--amber',amb);
+  $('uiAccent').value=grn; $('uiAccentVal').textContent=grn;
+  $('uiRed').value=red;    $('uiRedVal').textContent=red;
+  $('uiAmber').value=amb;  $('uiAmberVal').textContent=amb;
+  // Font
+  const fs=ui.fontSize||13;
+  document.documentElement.style.setProperty('--base-font',fs+'px');
+  $('uiFontSize').value=fs; $('fontSizeVal').textContent=fs+'px';
+  // Card radius
+  const cr=ui.cardRad||6;
+  document.documentElement.style.setProperty('--card-rad',cr+'px');
+  $('uiCardRad').value=cr; $('cardRadVal').textContent=cr+'px';
+  // Preview
+  updatePreview(grn,cr);
+  // Labels
+  if(ui.labels) fillLabelsGrid(ui.labels);
+  // Translations
+  applyTranslations();
+};
+
+function previewUI(){
+  const grn=$('uiAccent').value;
+  const red=$('uiRed').value;
+  const amb=$('uiAmber').value;
+  const fs=$('uiFontSize').value;
+  const cr=$('uiCardRad').value;
+  document.documentElement.style.setProperty('--grn',grn);
+  document.documentElement.style.setProperty('--grn2',grn+'29');
+  document.documentElement.style.setProperty('--red',red);
+  document.documentElement.style.setProperty('--amber',amb);
+  document.documentElement.style.setProperty('--base-font',fs+'px');
+  document.documentElement.style.setProperty('--card-rad',cr+'px');
+  $('uiAccentVal').textContent=grn;
+  $('uiRedVal').textContent=red;
+  $('uiAmberVal').textContent=amb;
+  $('fontSizeVal').textContent=fs+'px';
+  $('cardRadVal').textContent=cr+'px';
+  updatePreview(grn,parseInt(cr));
+}
+
+function updatePreview(grn,cr){
+  const pc=$('previewCard'); if(!pc) return;
+  pc.style.borderRadius=cr+'px';
+  const tag=$('previewTag'); if(tag){ tag.style.background=grn+'29'; tag.style.color=grn; }
+}
+
+function onLangChange(){
+  _lang=$('uiLang').value;
+  applyTranslations();
+}
+
+function buildLabelsGrid(){
+  const grid=$('labelsGrid'); if(!grid) return;
+  grid.innerHTML=DEFAULT_LABELS.map(key=>`
+    <div class="lbl-item">
+      <label>${(LANGS.ro)[key]||key}</label>
+      <input type="text" id="lbl_${key}" placeholder="${(LANGS[_lang]||LANGS.ro)[key]||key}">
+    </div>`).join('');
+}
+function fillLabelsGrid(labels){
+  DEFAULT_LABELS.forEach(key=>{
+    const inp=$('lbl_'+key); if(inp&&labels[key]) inp.value=labels[key];
+  });
+}
+
+async function saveUI(){
+  const labels={};
+  DEFAULT_LABELS.forEach(key=>{ const v=($('lbl_'+key)?.value||'').trim(); if(v) labels[key]=v; });
+  const data={
+    lang:$('uiLang').value,
+    accent:$('uiAccent').value,
+    red:$('uiRed').value,
+    amber:$('uiAmber').value,
+    fontSize:parseInt($('uiFontSize').value),
+    cardRad:parseInt($('uiCardRad').value),
+    labels
+  };
+  await window._db.setSetting('ui',data);
+  toast('success','ti-check',t('saveSettings'));
+  applyTranslations();
+}
+
+function resetUI(){
+  window._ui={};
+  applyUI();
+  toast('info','ti-refresh',t('reset'));
+}
+
+// ── LOGIN DROPDOWN ────────────────────────────────────────────────────────────
+window.rebuildLoginDropdown=function(){
+  const lu=$('loginUser'); if(!lu) return;
+  const prev=lu.value;
+  lu.innerHTML='<option value="">— alege —</option>';
+  const ao=document.createElement('option');
+  ao.value='__admin__'; ao.textContent='👑 Admin';
+  lu.appendChild(ao);
+  (window._departments||[]).forEach(d=>{
+    const o=document.createElement('option');
+    o.value='dept__'+d.id; o.textContent=d.title;
+    lu.appendChild(o);
+  });
+  if(prev) lu.value=prev;
+};
+
+window.rebuildAssignSelects=function(){
+  const staff=window._staff||[];
+  const af=$('assignFilter');
+  if(af){ const pv=af.value; af.innerHTML=`<option value="">${t('allStaff')}</option>`; staff.forEach(s=>{const o=document.createElement('option');o.value=staffFullName(s);o.textContent=staffFullName(s);af.appendChild(o);}); if(pv)af.value=pv; }
+  const nr=$('nResp');
+  if(nr){ const pv=nr.value; nr.innerHTML=`<option value="">— —</option>`; staff.forEach(s=>{const o=document.createElement('option');o.value=staffFullName(s);o.textContent=staffFullName(s)+' ('+deptTitle(s.department)+')';nr.appendChild(o);}); if(pv)nr.value=pv; }
+  const ss=$('sb-staff'); if(ss)ss.textContent=staff.length;
 };
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
-function doLogin() {
-  const uid  = $('loginUser').value;
-  const pass = $('loginPass').value;
-  if(!uid||!pass){ $('authErr').style.display='block'; return; }
-
-  let user = null;
-
-  if(uid === '__admin__') {
-    if(pass !== window._adminPass){ $('authErr').style.display='block'; return; }
-    user = {...ADMIN, password: window._adminPass};
-
-  } else if(uid.startsWith('dept__')) {
-    const deptId = uid.replace('dept__','');
-    const dept = (window._departments||[]).find(d=>d.id===deptId);
-    if(!dept || pass !== (dept.password||'')){ $('authErr').style.display='block'; return; }
-    user = { _id:uid, firstName:dept.title, lastName:'', role:dept.title, department:deptId };
+function doLogin(){
+  const uid=$('loginUser').value, pass=$('loginPass').value;
+  if(!uid||!pass){$('authErr').style.display='block';return;}
+  let user=null;
+  if(uid==='__admin__'){
+    if(pass!==window._adminPass){$('authErr').style.display='block';return;}
+    user={...ADMIN,password:window._adminPass};
+  } else if(uid.startsWith('dept__')){
+    const deptId=uid.replace('dept__','');
+    const dept=(window._departments||[]).find(d=>d.id===deptId);
+    if(!dept||pass!==(dept.password||'')){$('authErr').style.display='block';return;}
+    user={_id:uid,firstName:dept.title,lastName:'',role:dept.title,department:deptId};
   }
-
-  if(!user){ $('authErr').style.display='block'; return; }
-
-  _cu = user;
-  window._currentUser = user;
+  if(!user){$('authErr').style.display='block';return;}
+  _cu=user; window._currentUser=user;
   $('authScreen').classList.remove('open');
-  $('authErr').style.display = 'none';
-  $('loginPass').value = '';
-
-  const ini = initials(user.firstName, user.lastName);
-  $('userAvatar').textContent = ini;
-  $('sbAvatar').textContent   = ini;
-  $('sbName').textContent     = user.firstName;
-  $('sbRole').textContent     = user.role || '—';
-  $('notifDot').style.display = 'block';
-  window._appReady = true;
-  renderBoard();
-  renderNotifs();
-  toast('success','ti-check','Bun venit, '+user.firstName+'!');
+  $('authErr').style.display='none';
+  $('loginPass').value='';
+  const ini=initials(user.firstName,user.lastName);
+  $('userAvatar').textContent=ini; $('sbAvatar').textContent=ini;
+  $('sbName').textContent=user.firstName; $('sbRole').textContent=user.role||'—';
+  $('notifDot').style.display='block';
+  window._appReady=true;
+  renderBoard(); renderNotifs();
+  toast('success','ti-check',t('login')+': '+user.firstName);
 }
 
 // ── ADMIN PANEL ───────────────────────────────────────────────────────────────
-function openAdminPanel(){ $('adminPassInp').value=''; $('adminPassScreen').classList.add('open'); }
+function openAdminPanel(){$('adminPassInp').value='';$('adminPassScreen').classList.add('open');}
 function checkAdminPass(){
-  if($('adminPassInp').value === window._adminPass){
-    $('adminPassScreen').classList.remove('open');
-    switchView('admin');
-  } else {
-    $('adminPassInp').style.borderColor='var(--red)';
-    setTimeout(()=>$('adminPassInp').style.borderColor='',1000);
-    toast('error','ti-lock','Parolă incorectă.');
-  }
+  if($('adminPassInp').value===window._adminPass){$('adminPassScreen').classList.remove('open');switchView('admin');}
+  else{$('adminPassInp').style.borderColor='var(--red)';setTimeout(()=>$('adminPassInp').style.borderColor='',1000);toast('error','ti-lock','Parolă incorectă.');}
 }
 async function changeAdminPass(){
   const p=$('newAdminPass').value.trim();
-  if(p.length<6){ toast('warning','ti-alert-circle','Min. 6 caractere.'); return; }
+  if(p.length<6){toast('warning','ti-alert-circle','Min. 6 caractere.');return;}
   await window._db.setSetting('admin',{password:p});
   $('newAdminPass').value='';
-  toast('success','ti-key','Parolă admin actualizată.');
+  toast('success','ti-key',t('adminPassword'));
 }
 
 // ── STAFF TABLE ───────────────────────────────────────────────────────────────
-window.renderStaffTable = function(){
-  const t=$('staffTable'); if(!t) return;
+window.renderStaffTable=function(){
+  const t2=$('staffTable'); if(!t2) return;
   const staff=window._staff||[];
-  if(!staff.length){ t.innerHTML='<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">Niciun angajat adăugat.</div>'; return; }
-  t.innerHTML = staff.map(s=>{
-    const dc=deptColor(s.department), ini=initials(s.firstName,s.lastName);
+  if(!staff.length){t2.innerHTML=`<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">${t('newEmployee')}...</div>`;return;}
+  t2.innerHTML=staff.map(s=>{
+    const dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);
     return `<div class="tbl-row staff-cols">
       <div style="display:flex;align-items:center;gap:8px"><div class="aa" style="width:26px;height:26px;font-size:10px;background:${dc}22;color:${dc}">${ini}</div><span style="font-size:12px;font-weight:600">${s.firstName||''}</span></div>
       <div style="font-size:12px">${s.lastName||''}</div>
@@ -713,62 +911,52 @@ window.renderStaffTable = function(){
     </div>`;
   }).join('');
 };
-
-window.renderStaffCards = function(){
+window.renderStaffCards=function(){
   const c=$('staffCards'); if(!c) return;
   const staff=window._staff||[];
-  if(!staff.length){ c.innerHTML='<div style="color:var(--g3);font-size:12px">Niciun angajat adăugat.</div>'; return; }
+  if(!staff.length){c.innerHTML=`<div style="color:var(--g3);font-size:12px">${t('newEmployee')}...</div>`;return;}
   c.innerHTML=staff.map(s=>{
-    const dc=deptColor(s.department), ini=initials(s.firstName,s.lastName);
+    const dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);
     return `<div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div class="aa" style="width:38px;height:38px;font-size:14px;background:${dc}22;color:${dc}">${ini}</div>
-        <div><div style="font-size:13px;font-weight:600">${staffFullName(s)}</div><div style="font-size:11px;color:var(--g4)">${s.role||''}</div></div>
-      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="aa" style="width:38px;height:38px;font-size:14px;background:${dc}22;color:${dc}">${ini}</div><div><div style="font-size:13px;font-weight:600">${staffFullName(s)}</div><div style="font-size:11px;color:var(--g4)">${s.role||''}</div></div></div>
       <div style="font-size:11px;color:var(--g4);margin-bottom:4px"><i class="ti ti-building" style="font-size:12px;margin-right:3px"></i>${deptTitle(s.department)}</div>
       ${s.email?`<div style="font-size:11px;color:var(--g4)"><i class="ti ti-mail" style="font-size:12px;margin-right:3px"></i>${s.email}</div>`:''}
       ${s.phone?`<div style="font-size:11px;color:var(--g4);margin-top:3px"><i class="ti ti-phone" style="font-size:12px;margin-right:3px"></i>${s.phone}</div>`:''}
     </div>`;
   }).join('');
 };
-
 function editStaff(id){
   const s=(window._staff||[]).find(x=>x._id===id); if(!s) return;
-  _editIds.staff=id;
-  $('staffModalTitle').textContent='Editează Angajat';
+  _editIds.staff=id; $('staffModalTitle').textContent=t('newEmployee');
   $('sFirst').value=s.firstName||''; $('sLast').value=s.lastName||'';
   $('sRole').value=s.role||''; $('sEmail').value=s.email||'';
   $('sPhone').value=s.phone||''; $('sPass').value='';
-  openModal('staff');
-  setTimeout(()=>{ $('sDept').value=s.department||''; },60);
+  openModal('staff'); setTimeout(()=>{$('sDept').value=s.department||'';},60);
 }
 async function saveStaff(){
-  const first=$('sFirst').value.trim(), last=$('sLast').value.trim();
-  if(!first||!last){ toast('warning','ti-alert-circle','Prenumele și numele sunt obligatorii.'); return; }
+  const first=$('sFirst').value.trim(),last=$('sLast').value.trim();
+  if(!first||!last){toast('warning','ti-alert-circle',t('firstName')+' & '+t('lastName'));return;}
   const pass=$('sPass').value;
   const data={firstName:first,lastName:last,department:$('sDept').value,role:$('sRole').value,email:$('sEmail').value,phone:$('sPhone').value};
-  if(pass) data.password=pass;
+  if(pass)data.password=pass;
   try{
-    if(_editIds.staff){ await window._db.updateStaff(_editIds.staff,data); toast('info','ti-check','Angajat actualizat.'); }
-    else{ if(!pass){ toast('warning','ti-alert-circle','Parola este obligatorie.'); return; } await window._db.addStaff(data); toast('success','ti-user-check','Angajat adăugat: '+first+' '+last); }
-    closeModal('staff'); _editIds.staff=null;
-  }catch(e){ toast('error','ti-alert-circle','Eroare: '+e.message); }
+    if(_editIds.staff){await window._db.updateStaff(_editIds.staff,data);}
+    else{if(!pass){toast('warning','ti-alert-circle',t('loginPassword'));return;}await window._db.addStaff(data);}
+    closeModal('staff');_editIds.staff=null;toast('success','ti-user-check',t('save'));
+  }catch(e){toast('error','ti-alert-circle',e.message);}
 }
-async function deleteStaff(id){
-  if(!confirm('Ștergi angajatul?')) return;
-  await window._db.deleteStaff(id); toast('info','ti-trash','Angajat eliminat.');
-}
+async function deleteStaff(id){if(!confirm('?'))return;await window._db.deleteStaff(id);}
 
 // ── DEPT TABLE ────────────────────────────────────────────────────────────────
-window.renderDeptTable = function(){
-  const t=$('deptTable'); if(!t) return;
+window.renderDeptTable=function(){
+  const el=$('deptTable'); if(!el) return;
   const depts=window._departments||[];
-  if(!depts.length){ t.innerHTML='<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">Nicio coloană.</div>'; return; }
-  t.innerHTML=depts.map((d,i)=>`
+  if(!depts.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">${t('newColumn')}...</div>`;return;}
+  el.innerHTML=depts.map((d,i)=>`
     <div class="tbl-row dept-cols">
       <div style="display:flex;align-items:center;gap:4px">
-        <button onclick="moveDept(${i},-1)" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;" ${i===0?'disabled':''}>↑</button>
-        <button onclick="moveDept(${i},1)"  style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;" ${i===depts.length-1?'disabled':''}>↓</button>
+        <button onclick="moveDept(${i},-1)" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;"${i===0?' disabled':''}>↑</button>
+        <button onclick="moveDept(${i},1)"  style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;"${i===depts.length-1?' disabled':''}>↓</button>
       </div>
       <div style="font-size:12.5px;font-weight:600">${d.title}</div>
       <div><span class="color-swatch" style="background:${d.color}"></span></div>
@@ -779,11 +967,9 @@ window.renderDeptTable = function(){
       </div>
     </div>`).join('');
 };
-
 function editDept(i){
   const d=window._departments[i]; if(!d) return;
-  _editIds.dept=i;
-  $('deptModalTitle').textContent='Editează Coloană';
+  _editIds.dept=i; $('deptModalTitle').textContent=t('newColumn');
   $('dTitle').value=d.title; $('dColor').value=d.color; $('dPassword').value=d.password||'';
   openModal('dept');
 }
@@ -791,67 +977,55 @@ async function saveDept(){
   const title=$('dTitle').value.trim(); if(!title) return;
   const depts=[...(window._departments||[])];
   const entry={
-    id: _editIds.dept!==null&&_editIds.dept!==undefined ? depts[_editIds.dept].id : title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''),
-    title, color:$('dColor').value, password:$('dPassword').value.trim(), trigger:null
+    id:(_editIds.dept!=null?depts[_editIds.dept].id:title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')),
+    title,color:$('dColor').value,password:$('dPassword').value.trim(),trigger:null
   };
-  if(_editIds.dept!==null&&_editIds.dept!==undefined) depts[_editIds.dept]={...depts[_editIds.dept],...entry};
+  if(_editIds.dept!=null) depts[_editIds.dept]={...depts[_editIds.dept],...entry};
   else depts.push(entry);
   await window._db.setSetting('departments',{list:depts});
-  closeModal('dept'); _editIds.dept=null;
-  toast('success','ti-layout-columns','Coloană salvată.');
+  closeModal('dept');_editIds.dept=null;toast('success','ti-layout-columns',t('save'));
 }
-async function deleteDept(i){
-  if(!confirm('Ștergi coloana?')) return;
-  const depts=[...(window._departments||[])]; depts.splice(i,1);
-  await window._db.setSetting('departments',{list:depts});
-  toast('info','ti-trash','Coloană eliminată.');
-}
-async function moveDept(i,dir){
-  const depts=[...(window._departments||[])]; const j=i+dir;
-  if(j<0||j>=depts.length) return;
-  [depts[i],depts[j]]=[depts[j],depts[i]];
-  await window._db.setSetting('departments',{list:depts});
-}
+async function deleteDept(i){if(!confirm('?'))return;const d=[...(window._departments||[])];d.splice(i,1);await window._db.setSetting('departments',{list:d});}
+async function moveDept(i,dir){const d=[...(window._departments||[])];const j=i+dir;if(j<0||j>=d.length)return;[d[i],d[j]]=[d[j],d[i]];await window._db.setSetting('departments',{list:d});}
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function switchView(v){
   window._currentView=v;
-  ['kanban','reports','calendar','clients','staff','admin'].forEach(id=>{
+  ['kanban','reports','calendar','clients','staff','settings','admin'].forEach(id=>{
     const el=$(id+'View'); if(!el) return;
     el.style.display=(id===v)?(id==='kanban'?'flex':'flex'):'none';
     if(id!=='kanban') el.style.flexDirection='column';
   });
   $('boardToolbar').style.display=v==='kanban'?'flex':'none';
-  ['kanban','reports','calendar','clients','staff','admin'].forEach(id=>$('nav-'+id)?.classList.toggle('active',id===v));
+  ['kanban','reports','calendar','clients','staff','settings','admin'].forEach(id=>$('nav-'+id)?.classList.toggle('active',id===v));
   $('vt-kanban').classList.toggle('active',v==='kanban');
   $('vt-reports').classList.toggle('active',v==='reports');
   if(v==='calendar') renderCalendar();
   if(v==='clients')  renderClients();
   if(v==='reports')  renderReports();
   if(v==='staff')    renderStaffCards();
-  if(v==='admin')    { renderStaffTable(); renderDeptTable(); }
+  if(v==='admin')    {renderStaffTable();renderDeptTable();}
+  if(v==='settings') applyUI();
 }
 
 // ── KANBAN ────────────────────────────────────────────────────────────────────
-window.renderBoard = function(){
+window.renderBoard=function(){
   const board=$('kanbanView'); board.innerHTML='';
   (window._departments||[]).forEach(c=>{
     const col=document.createElement('div'); col.className='col';
     col.innerHTML=`<div class="col-hdr"><div class="col-dot" style="background:${c.color}"></div><div class="col-title">${c.title}</div><div class="col-cnt" id="cnt-${c.id}">0</div></div>`;
     const body=document.createElement('div'); body.className='col-body drop-zone'; body.dataset.col=c.id;
-    body.addEventListener('dragover', e=>{e.preventDefault();body.classList.add('drag-over');});
+    body.addEventListener('dragover',e=>{e.preventDefault();body.classList.add('drag-over');});
     body.addEventListener('dragleave',()=>body.classList.remove('drag-over'));
-    body.addEventListener('drop',     e=>onDrop(e,c.id));
+    body.addEventListener('drop',e=>onDrop(e,c.id));
     col.appendChild(body); board.appendChild(col);
   });
   filterCards();
 };
-
-window.filterCards = function(){
+window.filterCards=function(){
   if(!window._appReady) return;
   const q=($('searchInp')?.value||'').toLowerCase();
-  const uf=$('urgFilter')?.value||'';
-  const af=$('assignFilter')?.value||'';
+  const uf=$('urgFilter')?.value||'', af=$('assignFilter')?.value||'';
   document.querySelectorAll('.col-body').forEach(b=>b.innerHTML='');
   let vis=0;
   (window._projects||[]).forEach(p=>{
@@ -859,12 +1033,11 @@ window.filterCards = function(){
     if(af&&p.resp!==af) return;
     if(q&&!p.client?.toLowerCase().includes(q)&&!p.type?.toLowerCase().includes(q)) return;
     const body=document.querySelector(`.col-body[data-col="${p.col}"]`);
-    if(body){ body.appendChild(makeCard(p)); vis++; }
+    if(body){body.appendChild(makeCard(p));vis++;}
   });
-  const fs=$('filterStatus'); if(fs) fs.textContent=vis+' proiecte';
+  const fs=$('filterStatus'); if(fs) fs.textContent=vis+' '+t('projects');
   updateCounts();
 };
-
 function makeCard(p){
   const s=(window._staff||[]).find(x=>staffFullName(x)===p.resp);
   const dc=s?deptColor(s.department):'#888';
@@ -873,7 +1046,7 @@ function makeCard(p){
   card.innerHTML=`
     <div class="ct"><div><div class="cc">${p.client||''}</div><div class="cty">${p.type||''}</div></div><div class="urg ${p.urg||'l'}"></div></div>
     <div class="cdl ${p.urg||'l'}"><i class="ti ti-clock" style="font-size:10px"></i> ${p.deadline||'—'}</div>
-    <div class="ctags">${(p.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}${(p.tagsA||[]).map(t=>`<span class="tag a">${t}</span>`).join('')}</div>
+    <div class="ctags">${(p.tags||[]).map(tg=>`<span class="tag">${tg}</span>`).join('')}${(p.tagsA||[]).map(tg=>`<span class="tag a">${tg}</span>`).join('')}</div>
     <div class="cf">
       <div style="display:flex;align-items:center;gap:4px"><div class="aa" style="width:19px;height:19px;font-size:8px;background:${dc}22;color:${dc}">${ini}</div><span style="font-size:10px;color:var(--g4)">${p.resp||'—'}</span></div>
       <div style="display:flex;align-items:center;gap:4px"><div class="pb" style="width:44px"><div class="pf" style="width:${p.prog||0}%"></div></div><span style="font-size:9.5px;color:var(--g3)">${p.prog||0}%</span></div>
@@ -883,41 +1056,26 @@ function makeCard(p){
   card.addEventListener('click',()=>openDetail(p._id));
   return card;
 }
-
 function onDrop(e,colId){
   e.preventDefault();
   document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));
   const id=e.dataTransfer.getData('text/plain');
   const p=(window._projects||[]).find(x=>x._id===id);
   if(!p||p.col===colId) return;
-
-  const user=window._currentUser;
-  const cols=window._departments||[];
-
-  // Verificare permisiuni — Admin poate muta oriunde
-  if(user && user.department){
-    const fromIdx=cols.findIndex(c=>c.id===p.col);
-    const toIdx=cols.findIndex(c=>c.id===colId);
-    const userIdx=cols.findIndex(c=>c.id===user.department);
-    if(fromIdx!==userIdx){
-      toast('warning','ti-lock','Poți muta doar proiecte din „'+cols[userIdx]?.title+'".');
-      return;
-    }
-    if(toIdx!==fromIdx+1){
-      toast('warning','ti-lock','Poți muta doar la etapa următoare: „'+(cols[fromIdx+1]?.title||'—')+'".');
-      return;
-    }
+  const user=window._currentUser, cols=window._departments||[];
+  if(user&&user.department){
+    const fi=cols.findIndex(c=>c.id===p.col), ti=cols.findIndex(c=>c.id===colId), ui=cols.findIndex(c=>c.id===user.department);
+    if(fi!==ui){toast('warning','ti-lock',t('urgent'));return;}
+    if(ti!==fi+1){toast('warning','ti-lock',t('deadline'));return;}
   }
-
   window._db.updateProject(id,{col:colId}).then(()=>triggerNotif({...p,col:colId}));
 }
-
 function updateCounts(){
   const ps=window._projects||[];
-  (window._departments||[]).forEach(c=>{ const el=$('cnt-'+c.id); if(el) el.textContent=ps.filter(p=>p.col===c.id).length; });
-  const sc=$('sb-cnt');    if(sc) sc.textContent=ps.length;
-  const sa=$('sb-active'); if(sa) sa.textContent=ps.length;
-  const su=$('sb-urg');    if(su) su.textContent=ps.filter(p=>p.urg==='h').length;
+  (window._departments||[]).forEach(c=>{const el=$('cnt-'+c.id);if(el)el.textContent=ps.filter(p=>p.col===c.id).length;});
+  const sc=$('sb-cnt');if(sc)sc.textContent=ps.length;
+  const sa=$('sb-active');if(sa)sa.textContent=ps.length;
+  const su=$('sb-urg');if(su)su.textContent=ps.filter(p=>p.urg==='h').length;
 }
 
 // ── DETAIL ────────────────────────────────────────────────────────────────────
@@ -926,10 +1084,10 @@ function openDetail(id){
   const cols=window._departments||[];
   const colName=cols.find(c=>c.id===p.col)?.title||'';
   const nextCol=cols[cols.findIndex(c=>c.id===p.col)+1];
-  const tasks=(p.tasks||[]).map((t,i)=>`
+  const tasks=(p.tasks||[]).map((tk,i)=>`
     <div class="task-row">
-      <div class="tck ${t.d?'done':''}" onclick="toggleTask('${id}',${i})"><i class="ti ti-check" style="font-size:10px;${t.d?'':'display:none'}"></i></div>
-      <span style="flex:1;font-size:12px;${t.d?'text-decoration:line-through;color:var(--g3)':''}">${t.t}</span>
+      <div class="tck ${tk.d?'done':''}" onclick="toggleTask('${id}',${i})"><i class="ti ti-check" style="font-size:10px;${tk.d?'':'display:none'}"></i></div>
+      <span style="flex:1;font-size:12px;${tk.d?'text-decoration:line-through;color:var(--g3)':''}">${tk.t}</span>
     </div>`).join('');
   $('detailBox').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
@@ -937,38 +1095,32 @@ function openDetail(id){
       <button onclick="closeDetail()" style="background:none;border:none;color:var(--g4);cursor:pointer;font-size:18px;"><i class="ti ti-x"></i></button>
     </div>
     <div class="dg">
-      <div class="df"><div class="dfl">Etapă</div><div class="dfv">${colName}</div></div>
-      <div class="df"><div class="dfl">Deadline</div><div class="dfv">${p.deadline||'—'}</div></div>
-      <div class="df"><div class="dfl">Responsabil</div><div class="dfv">${p.resp||'—'}</div></div>
-      <div class="df"><div class="dfl">Urgență</div><div class="dfv">${p.urg==='h'?'🔴 Urgent':p.urg==='m'?'🟡 Mediu':'🟢 Normal'}</div></div>
-      <div class="df" style="grid-column:span 2"><div class="dfl">Note</div><div class="dfv">${p.notes||'—'}</div></div>
+      <div class="df"><div class="dfl">${t('production')}</div><div class="dfv">${colName}</div></div>
+      <div class="df"><div class="dfl">${t('deadline')}</div><div class="dfv">${p.deadline||'—'}</div></div>
+      <div class="df"><div class="dfl">${t('responsible')}</div><div class="dfv">${p.resp||'—'}</div></div>
+      <div class="df"><div class="dfl">${t('urgency')}</div><div class="dfv">${p.urg==='h'?'🔴 '+t('urgent'):p.urg==='m'?'🟡 '+t('medium'):'🟢 '+t('normal')}</div></div>
+      <div class="df" style="grid-column:span 2"><div class="dfl">${t('notes')}</div><div class="dfv">${p.notes||'—'}</div></div>
     </div>
     <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--g4);margin-bottom:4px"><span>Progres</span><span>${p.prog||0}%</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--g4);margin-bottom:4px"><span>${t('projects')}</span><span>${p.prog||0}%</span></div>
       <div class="prog-big"><div class="prog-big-fill" style="width:${p.prog||0}%"></div></div>
     </div>
-    <div>
-      <div style="font-size:11px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Task-uri</div>
-      ${tasks||'<div style="color:var(--g3);font-size:12px;padding:8px 0">Fără task-uri</div>'}
-    </div>
-    ${nextCol?`<button class="move-btn" onclick="moveToNext('${id}')"><i class="ti ti-arrow-right"></i> Mută în „${nextCol.title}"</button>`:'<div style="margin-top:14px;text-align:center;font-size:12px;color:var(--grn)">✓ Proiect finalizat</div>'}`;
+    <div><div style="font-size:11px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tasks</div>${tasks||'<div style="color:var(--g3);font-size:12px;padding:8px 0">—</div>'}</div>
+    ${nextCol?`<button class="move-btn" onclick="moveToNext('${id}')"><i class="ti ti-arrow-right"></i> → „${nextCol.title}"</button>`:'<div style="margin-top:14px;text-align:center;font-size:12px;color:var(--grn)">✓ Done</div>'}`;
   $('detailBg').classList.add('open');
 }
-function closeDetail(){ $('detailBg').classList.remove('open'); }
+function closeDetail(){$('detailBg').classList.remove('open');}
 function toggleTask(pid,ti){
   const p=(window._projects||[]).find(x=>x._id===pid); if(!p) return;
   const tasks=[...(p.tasks||[])]; tasks[ti]={...tasks[ti],d:!tasks[ti].d};
-  const prog=Math.round(tasks.filter(t=>t.d).length/tasks.length*100);
+  const prog=Math.round(tasks.filter(tk=>tk.d).length/tasks.length*100);
   window._db.updateProject(pid,{tasks,prog}).then(()=>setTimeout(()=>openDetail(pid),300));
 }
 function moveToNext(id){
   const p=(window._projects||[]).find(x=>x._id===id); if(!p) return;
   const cols=window._departments||[];
   const idx=cols.findIndex(c=>c.id===p.col);
-  if(idx<cols.length-1){
-    const nc=cols[idx+1].id;
-    window._db.updateProject(id,{col:nc}).then(()=>{ triggerNotif({...p,col:nc}); closeDetail(); });
-  }
+  if(idx<cols.length-1){const nc=cols[idx+1].id;window._db.updateProject(id,{col:nc}).then(()=>{triggerNotif({...p,col:nc});closeDetail();});}
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
@@ -977,78 +1129,48 @@ function triggerNotif(p){
   window._db.addNotif({ico:'ti-bell',icoCol:'#1e3d29',icoTxt:'#5ec97a',title:p.client+' → '+col.title,msg:p.type||'',time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})});
   toast('info','ti-bell',p.client+' → '+col.title);
 }
-window.renderNotifs = function(){
+window.renderNotifs=function(){
   const ns=window._notifs||[]; const list=$('notifList'); if(!list) return;
-  list.innerHTML=ns.length?ns.map(n=>`
-    <div class="ni">
-      <div class="ni-ico" style="background:${n.icoCol||'#1e3d29'};color:${n.icoTxt||'#5ec97a'}"><i class="ti ${n.ico||'ti-bell'}"></i></div>
-      <div class="ni-txt"><strong>${n.title||''}</strong>${n.msg||''}<div class="ni-time">${n.time||''}</div></div>
-    </div>`).join(''):'<div style="padding:16px;text-align:center;color:var(--g3);font-size:12px">Nicio notificare</div>';
-  const cnt=$('notifCount'); if(cnt) cnt.textContent=ns.length;
-  const dot=$('notifDot');   if(dot) dot.style.display=ns.length?'block':'none';
+  list.innerHTML=ns.length?ns.map(n=>`<div class="ni"><div class="ni-ico" style="background:${n.icoCol||'#1e3d29'};color:${n.icoTxt||'#5ec97a'}"><i class="ti ${n.ico||'ti-bell'}"></i></div><div class="ni-txt"><strong>${n.title||''}</strong>${n.msg||''}<div class="ni-time">${n.time||''}</div></div></div>`).join(''):`<div style="padding:16px;text-align:center;color:var(--g3);font-size:12px">${t('notifications')}</div>`;
+  const cnt=$('notifCount');if(cnt)cnt.textContent=ns.length;
+  const dot=$('notifDot');if(dot)dot.style.display=ns.length?'block':'none';
 };
-function toggleNotif(){ $('notifPanel').classList.toggle('open'); }
-document.addEventListener('click',e=>{
-  const p=$('notifPanel');
-  if(!p?.contains(e.target)&&!e.target.closest('.icon-btn')) p?.classList.remove('open');
-});
+function toggleNotif(){$('notifPanel').classList.toggle('open');}
+document.addEventListener('click',e=>{const p=$('notifPanel');if(!p?.contains(e.target)&&!e.target.closest('.icon-btn'))p?.classList.remove('open');});
 
 // ── MODALS ────────────────────────────────────────────────────────────────────
 function openModal(type){
   if(type==='staff'){
-    const sd=$('sDept'); if(sd){
-      sd.innerHTML='<option value="">— alege —</option>';
-      (window._departments||[]).forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.title; sd.appendChild(o); });
-    }
+    const sd=$('sDept'); if(sd){sd.innerHTML=`<option value="">— —</option>`;(window._departments||[]).forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.title;sd.appendChild(o);});}
   }
   $(type+'Modal').classList.add('open');
 }
-function closeModal(type){
-  $(type+'Modal').classList.remove('open');
-  if(type==='staff') _editIds.staff=null;
-  if(type==='dept')  _editIds.dept=null;
-  if(type==='client') _editIds.client=null;
-}
+function closeModal(type){$(type+'Modal').classList.remove('open');if(type==='staff')_editIds.staff=null;if(type==='dept')_editIds.dept=null;if(type==='client')_editIds.client=null;}
 
-// ── PROJECT ───────────────────────────────────────────────────────────────────
 async function saveProject(){
-  const client=$('nClient').value.trim(); if(!client){ $('nClient').focus(); return; }
+  const client=$('nClient').value.trim(); if(!client){$('nClient').focus();return;}
   const mat=$('nMat').value;
-  const data={
-    col:(window._departments||[])[0]?.id||'comenzi',
-    client, type:$('nType').value, deadline:$('nDate').value,
-    urg:$('nUrg').value, resp:$('nResp').value,
-    tags:mat?mat.split(',').map(s=>s.trim()).filter(Boolean).slice(0,3):['Nou'],
-    tagsA:[], prog:0, notes:$('nNotes').value,
-    tasks:[{t:'Primire brief',d:false},{t:'Semnare contract',d:false}]
-  };
-  try{
-    await window._db.addProject(data);
-    closeModal('project');
-    toast('success','ti-circle-check','Proiect salvat: '+client);
-    ['nClient','nDate','nNotes','nMat'].forEach(id=>$(id).value='');
-  }catch(e){ toast('error','ti-alert-circle','Eroare: '+e.message); }
+  const data={col:(window._departments||[])[0]?.id||'comenzi',client,type:$('nType').value,deadline:$('nDate').value,urg:$('nUrg').value,resp:$('nResp').value,tags:mat?mat.split(',').map(s=>s.trim()).filter(Boolean).slice(0,3):['Nou'],tagsA:[],prog:0,notes:$('nNotes').value,tasks:[{t:'Brief',d:false},{t:'Contract',d:false}]};
+  try{await window._db.addProject(data);closeModal('project');toast('success','ti-circle-check',t('newProject')+': '+client);['nClient','nDate','nNotes','nMat'].forEach(id=>$(id).value='');}
+  catch(e){toast('error','ti-alert-circle',e.message);}
 }
 
 // ── CLIENTS ───────────────────────────────────────────────────────────────────
-window.renderClients = function(){
+window.renderClients=function(){
   const q=($('clientSearch')?.value||'').toLowerCase();
-  const cs=window._clients||[], ps=window._projects||[];
+  const cs=window._clients||[],ps=window._projects||[];
   const fl=cs.filter(c=>c.name?.toLowerCase().includes(q)||c.contact?.toLowerCase().includes(q));
-  [['stat-total',cs.length],['stat-active',cs.filter(c=>ps.some(p=>p.client===c.name)).length],['stat-proj',ps.length],['stat-urg2',ps.filter(p=>p.urg==='h').length]]
-    .forEach(([id,v])=>{ const el=$(id); if(el) el.textContent=v; });
+  [['stat-total',cs.length],['stat-active',cs.filter(c=>ps.some(p=>p.client===c.name)).length],['stat-proj',ps.length],['stat-urg2',ps.filter(p=>p.urg==='h').length]].forEach(([id,v])=>{const el=$(id);if(el)el.textContent=v;});
   const list=$('clientsList'); if(!list) return;
-  if(!fl.length){ list.innerHTML='<div style="padding:24px;text-align:center;color:var(--g3);font-size:12px">Niciun client găsit</div>'; return; }
+  if(!fl.length){list.innerHTML=`<div style="padding:24px;text-align:center;color:var(--g3);font-size:12px">${t('clients')}</div>`;return;}
   list.innerHTML=fl.map(c=>{
-    const cp=ps.filter(p=>p.client===c.name);
-    const last=cp.sort((a,b)=>(b.deadline||'').localeCompare(a.deadline||''))[0];
-    const urg=cp.some(p=>p.urg==='h');
+    const cp=ps.filter(p=>p.client===c.name),last=cp.sort((a,b)=>(b.deadline||'').localeCompare(a.deadline||''))[0],urg=cp.some(p=>p.urg==='h');
     return `<div class="tbl-row clients-cols">
       <div><div style="font-size:12.5px;font-weight:600">${c.name}</div><div style="font-size:10.5px;color:var(--g4)">${c.industry||''}</div></div>
       <div><div style="font-size:12px">${c.contact||'—'}</div><div style="font-size:10.5px;color:var(--g4)">${c.email||''}</div></div>
       <div><span style="background:var(--grn2);color:var(--grn);font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600">${cp.length}</span></div>
       <div style="font-size:11px;color:var(--g4)">${last?.deadline||'—'}</div>
-      <div>${urg?'<span style="background:#3d1e1e;color:var(--red);font-size:10px;padding:2px 8px;border-radius:8px">Urgent</span>':'<span style="background:var(--grn2);color:var(--grn);font-size:10px;padding:2px 8px;border-radius:8px">OK</span>'}</div>
+      <div>${urg?`<span style="background:#3d1e1e;color:var(--red);font-size:10px;padding:2px 8px;border-radius:8px">${t('urgent')}</span>`:`<span style="background:var(--grn2);color:var(--grn);font-size:10px;padding:2px 8px;border-radius:8px">OK</span>`}</div>
       <div style="display:flex;gap:5px">
         <button onclick="editClient('${c._id}')" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-pencil" style="font-size:13px"></i></button>
         <button onclick="deleteClient('${c._id}')" style="background:#3d1e1e;border:none;border-radius:4px;color:var(--red);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-trash" style="font-size:13px"></i></button>
@@ -1058,68 +1180,65 @@ window.renderClients = function(){
 };
 function editClient(id){
   const c=(window._clients||[]).find(x=>x._id===id); if(!c) return;
-  _editIds.client=id; $('clientModalTitle').textContent='Editează Client';
-  $('cName').value=c.name||''; $('cContact').value=c.contact||'';
-  $('cEmail').value=c.email||''; $('cPhone').value=c.phone||''; $('cAddr').value=c.addr||'';
+  _editIds.client=id; $('clientModalTitle').textContent=t('newClient');
+  $('cName').value=c.name||''; $('cContact').value=c.contact||''; $('cEmail').value=c.email||''; $('cPhone').value=c.phone||''; $('cAddr').value=c.addr||'';
   openModal('client');
 }
 async function saveClient(){
-  const name=$('cName').value.trim(); if(!name){ $('cName').focus(); return; }
+  const name=$('cName').value.trim(); if(!name){$('cName').focus();return;}
   const data={name,contact:$('cContact').value,email:$('cEmail').value,phone:$('cPhone').value,addr:$('cAddr').value,industry:$('cIndustry').value};
-  try{
-    if(_editIds.client) await window._db.updateClient(_editIds.client,data);
-    else await window._db.addClient(data);
-    closeModal('client'); _editIds.client=null;
-    toast('success','ti-user-check','Client salvat: '+name);
-  }catch(e){ toast('error','ti-alert-circle','Eroare: '+e.message); }
+  try{if(_editIds.client)await window._db.updateClient(_editIds.client,data);else await window._db.addClient(data);closeModal('client');_editIds.client=null;toast('success','ti-user-check',t('save'));}
+  catch(e){toast('error','ti-alert-circle',e.message);}
 }
-async function deleteClient(id){ await window._db.deleteClient(id); toast('info','ti-trash','Client eliminat.'); }
+async function deleteClient(id){await window._db.deleteClient(id);}
 
 // ── REPORTS ───────────────────────────────────────────────────────────────────
-window.renderReports = function(){
-  const ps=window._projects||[], cs=window._clients||[], st=window._staff||[];
-  [['rpt-active',ps.length],['rpt-urg',ps.filter(p=>p.urg==='h').length],['rpt-cl',cs.length],['rpt-st',st.length]]
-    .forEach(([id,v])=>{ const el=$(id); if(el) el.textContent=v; });
-  const stages=$('rpt-stages'), depts=window._departments||[];
-  if(stages) stages.innerHTML=depts.map(c=>{ const n=ps.filter(p=>p.col===c.id).length, pct=ps.length?Math.round(n/ps.length*100):0; return `<div class="br"><span class="bl">${c.title.split(' ').pop()}</span><div class="bt"><div class="bf" style="width:${pct}%;background:${c.color}"></div></div><span class="bv">${n}</span></div>`; }).join('');
+window.renderReports=function(){
+  const ps=window._projects||[],cs=window._clients||[],st=window._staff||[];
+  [['rpt-active',ps.length],['rpt-urg',ps.filter(p=>p.urg==='h').length],['rpt-cl',cs.length],['rpt-st',st.length]].forEach(([id,v])=>{const el=$(id);if(el)el.textContent=v;});
+  const stages=$('rpt-stages'),depts=window._departments||[];
+  if(stages)stages.innerHTML=depts.map(c=>{const n=ps.filter(p=>p.col===c.id).length,pct=ps.length?Math.round(n/ps.length*100):0;return`<div class="br"><span class="bl">${c.title.split(' ').pop()}</span><div class="bt"><div class="bf" style="width:${pct}%;background:${c.color}"></div></div><span class="bv">${n}</span></div>`;}).join('');
   const ugb=$('rpt-urgs');
-  if(ugb){ const tot=ps.length||1,uh=ps.filter(p=>p.urg==='h').length,um=ps.filter(p=>p.urg==='m').length,ul=ps.filter(p=>p.urg==='l').length; ugb.innerHTML=`<div class="br"><span class="bl">🔴 Urgent</span><div class="bt"><div class="bf" style="width:${Math.round(uh/tot*100)}%;background:var(--red)"></div></div><span class="bv">${uh}</span></div><div class="br"><span class="bl">🟡 Mediu</span><div class="bt"><div class="bf" style="width:${Math.round(um/tot*100)}%;background:var(--amber)"></div></div><span class="bv">${um}</span></div><div class="br"><span class="bl">🟢 Normal</span><div class="bt"><div class="bf" style="width:${Math.round(ul/tot*100)}%;background:var(--grn)"></div></div><span class="bv">${ul}</span></div>`; }
+  if(ugb){const tot=ps.length||1,uh=ps.filter(p=>p.urg==='h').length,um=ps.filter(p=>p.urg==='m').length,ul=ps.filter(p=>p.urg==='l').length;ugb.innerHTML=`<div class="br"><span class="bl">🔴 ${t('urgent')}</span><div class="bt"><div class="bf" style="width:${Math.round(uh/tot*100)}%;background:var(--red)"></div></div><span class="bv">${uh}</span></div><div class="br"><span class="bl">🟡 ${t('medium')}</span><div class="bt"><div class="bf" style="width:${Math.round(um/tot*100)}%;background:var(--amber)"></div></div><span class="bv">${um}</span></div><div class="br"><span class="bl">🟢 ${t('normal')}</span><div class="bt"><div class="bf" style="width:${Math.round(ul/tot*100)}%;background:var(--grn)"></div></div><span class="bv">${ul}</span></div>`;}
   const team=$('rpt-team');
-  if(team) team.innerHTML=st.map(s=>{ const sc=ps.filter(p=>p.resp===staffFullName(s)).length, dc=deptColor(s.department), ini=initials(s.firstName,s.lastName); return `<div style="background:var(--b1);border-radius:var(--rads);padding:10px 12px;display:flex;align-items:center;gap:8px"><div class="aa" style="width:26px;height:26px;font-size:10px;background:${dc}22;color:${dc}">${ini}</div><div style="flex:1"><div style="font-size:12px;font-weight:600">${staffFullName(s)}</div><div style="font-size:10px;color:var(--g4)">${deptTitle(s.department)}</div></div><div style="font-size:16px;font-weight:700;color:var(--grn)">${sc}</div></div>`; }).join('');
+  if(team)team.innerHTML=st.map(s=>{const sc=ps.filter(p=>p.resp===staffFullName(s)).length,dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);return`<div style="background:var(--b1);border-radius:var(--rads);padding:10px 12px;display:flex;align-items:center;gap:8px"><div class="aa" style="width:26px;height:26px;font-size:10px;background:${dc}22;color:${dc}">${ini}</div><div style="flex:1"><div style="font-size:12px;font-weight:600">${staffFullName(s)}</div><div style="font-size:10px;color:var(--g4)">${deptTitle(s.department)}</div></div><div style="font-size:16px;font-weight:700;color:var(--grn)">${sc}</div></div>`;}).join('');
 };
 
 // ── CALENDAR ──────────────────────────────────────────────────────────────────
-function calNav(d){ calMonth+=d; if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-function calGoToday(){ calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendar(); }
+function calNav(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calGoToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCalendar();}
 function renderCalendar(){
-  const M=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
-  $('calTitle').textContent=M[calMonth]+' '+calYear;
+  const M={ro:['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'],en:['January','February','March','April','May','June','July','August','September','October','November','December'],de:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],fr:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],it:['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'],es:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],hu:['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'],bg:['Януари','Февруари','Март','Април','Май','Юни','Юли','Август','Септември','Октомври','Ноември','Декември'],uk:['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],nl:['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']};
+  const D={ro:['LUN','MAR','MIE','JOI','VIN','SÂM','DUM'],en:['MON','TUE','WED','THU','FRI','SAT','SUN'],de:['MO','DI','MI','DO','FR','SA','SO'],fr:['LUN','MAR','MER','JEU','VEN','SAM','DIM'],it:['LUN','MAR','MER','GIO','VEN','SAB','DOM'],es:['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'],hu:['HÉT','KED','SZE','CSÜ','PÉN','SZO','VAS'],bg:['ПОН','ВТО','СРЯ','ЧЕТ','ПЕТ','СЪБ','НЕД'],uk:['ПОН','ВІВ','СЕР','ЧЕТ','ПЯТ','СУБ','НЕД'],nl:['MA','DI','WO','DO','VR','ZA','ZO']};
+  const ml=M[_lang]||M.ro, dl=D[_lang]||D.ro;
+  $('calTitle').textContent=ml[calMonth]+' '+calYear;
+  const dn=$('calDayNames'); if(dn){dn.innerHTML=dl.map((d,i)=>`<div style="text-align:center;font-size:10.5px;font-weight:700;color:${i>=5?'var(--red)':'var(--g4)'};padding:6px 0">${d}</div>`).join('');}
   const grid=$('calGrid'); grid.innerHTML='';
   const today=new Date(); today.setHours(0,0,0,0);
-  const first=new Date(calYear,calMonth,1), last=new Date(calYear,calMonth+1,0);
+  const first=new Date(calYear,calMonth,1),last=new Date(calYear,calMonth+1,0);
   let sd=first.getDay(); if(sd===0) sd=7;
-  for(let i=1;i<sd;i++){ const e=document.createElement('div'); e.style.cssText='min-height:70px;background:var(--b1);border-radius:4px;opacity:.3;'; grid.appendChild(e); }
+  for(let i=1;i<sd;i++){const e=document.createElement('div');e.style.cssText='min-height:70px;background:var(--b1);border-radius:4px;opacity:.3;';grid.appendChild(e);}
   for(let d=1;d<=last.getDate();d++){
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=new Date(calYear,calMonth,d).getTime()===today.getTime();
     const dp=(window._projects||[]).filter(p=>p.deadline===ds);
     const cell=document.createElement('div'); cell.className='cal-day'+(isToday?' today':'');
     let html=`<div style="font-size:11px;font-weight:700;color:${isToday?'var(--grn)':'var(--g5)'};margin-bottom:4px">${d}</div>`;
-    dp.forEach(p=>{ const c=(window._departments||[]).find(col=>col.id===p.col); html+=`<div class="cal-ev" onclick="openDetail('${p._id}')" style="background:${c?.color||'#555'}22;border-left:2px solid ${c?.color||'#555'}">${p.client}</div>`; });
+    dp.forEach(p=>{const c=(window._departments||[]).find(col=>col.id===p.col);html+=`<div class="cal-ev" onclick="openDetail('${p._id}')" style="background:${c?.color||'#555'}22;border-left:2px solid ${c?.color||'#555'}">${p.client}</div>`;});
     cell.innerHTML=html; grid.appendChild(cell);
   }
 }
 
 // ── TV MODE ───────────────────────────────────────────────────────────────────
-function toggleTV(){ _tvMode=!_tvMode; document.body.classList.toggle('tv',_tvMode); $('tvBtn').style.color=_tvMode?'var(--grn)':''; toast('info','ti-device-tv','TV Mode '+(_tvMode?'ON':'OFF')); }
+function toggleTV(){_tvMode=!_tvMode;document.body.classList.toggle('tv',_tvMode);$('tvBtn').style.color=_tvMode?'var(--grn)':'';toast('info','ti-device-tv','TV Mode '+(_tvMode?'ON':'OFF'));}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
-window.toast = function(type,icon,msg){
-  const w=$('toastWrap'), t=document.createElement('div');
-  t.className='toast '+type;
-  t.innerHTML=`<i class="ti ${icon}" style="font-size:16px"></i><span>${msg}</span>`;
-  w.appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); },3500);
+window.toast=function(type,icon,msg){
+  const w=$('toastWrap'),el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML=`<i class="ti ${icon}" style="font-size:16px"></i><span>${msg}</span>`;
+  w.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3500);
 };
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
