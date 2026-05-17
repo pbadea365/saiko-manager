@@ -2,1252 +2,451 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<meta name="theme-color" content="#0d0d0d">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Saiko PMS">
-<title>Saiko Media & Signs</title>
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Krennic PMS – Sistemul de management al producției pentru companii de publicitate și semnalistică. Kanban live, echipă, clienți, notificări.">
+<title>Krennic PMS – Production Management System</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCQvrVCn7zYa39d6dFIOw9CcE-iVVAQaIA",
-  authDomain: "saiko-media.firebaseapp.com",
-  projectId: "saiko-media",
-  storageBucket: "saiko-media.firebasestorage.app",
-  messagingSenderId: "226457269371",
-  appId: "1:226457269371:web:e054ad6a09794605839ede"
-};
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-const C   = {
-  projects: collection(db,"projects"),
-  clients:  collection(db,"clients"),
-  notifs:   collection(db,"notifications"),
-  staff:    collection(db,"staff"),
-  settings: collection(db,"settings"),
-};
-
-window._db = {
-  addProject:    d => addDoc(C.projects,{...d,createdAt:serverTimestamp()}),
-  updateProject: (id,d) => updateDoc(doc(db,"projects",id),{...d,updatedAt:serverTimestamp()}),
-  deleteProject: id => deleteDoc(doc(db,"projects",id)),
-  addClient:     d => addDoc(C.clients,{...d,createdAt:serverTimestamp()}),
-  updateClient:  (id,d) => updateDoc(doc(db,"clients",id),d),
-  deleteClient:  id => deleteDoc(doc(db,"clients",id)),
-  addNotif:      d => addDoc(C.notifs,{...d,createdAt:serverTimestamp()}),
-  addStaff:      d => addDoc(C.staff,{...d,createdAt:serverTimestamp()}),
-  updateStaff:   (id,d) => updateDoc(doc(db,"staff",id),d),
-  deleteStaff:   id => deleteDoc(doc(db,"staff",id)),
-  setSetting:    (key,d) => setDoc(doc(db,"settings",key),{...d,updatedAt:serverTimestamp()},{merge:true}),
-};
-
-onSnapshot(query(C.projects,orderBy("createdAt","desc")), snap => {
-  window._projects = snap.docs.map(d=>({...d.data(),_id:d.id}));
-  if(window._appReady){ window.filterCards(); if(window._currentView==='reports') window.renderReports(); }
-});
-onSnapshot(query(C.clients,orderBy("name")), snap => {
-  window._clients = snap.docs.map(d=>({...d.data(),_id:d.id}));
-  if(window._appReady && window._currentView==='clients') window.renderClients();
-});
-onSnapshot(query(C.notifs,orderBy("createdAt","desc")), snap => {
-  window._notifs = snap.docs.slice(0,15).map(d=>d.data());
-  if(window._appReady) window.renderNotifs();
-});
-onSnapshot(query(C.staff,orderBy("lastName")), snap => {
-  window._staff = snap.docs.map(d=>({...d.data(),_id:d.id}));
-  if(window._appReady){
-    window.rebuildAssignSelects();
-    if(window._currentView==='admin') window.renderStaffTable();
-    if(window._currentView==='staff') window.renderStaffCards();
-  }
-});
-onSnapshot(doc(db,"settings","departments"), snap => {
-  if(snap.exists()){
-    window._departments = snap.data().list||[];
-  } else {
-    window._departments = [
-      {id:'comenzi',     title:'Comenzi Noi',       color:'#5b9bdb',trigger:null},
-      {id:'grafica',     title:'Proiectare Grafică', color:'#b07fe0',trigger:'grafica'},
-      {id:'autocad',     title:'Proiectare Tehnică', color:'#e09a34',trigger:'autocad'},
-      {id:'atelier',     title:'Producție Atelier',  color:'#5ec97a',trigger:'atelier'},
-      {id:'implementare',title:'Implementare',        color:'#e05252',trigger:null},
-    ];
-    window._db.setSetting('departments',{list:window._departments});
-  }
-  window.rebuildLoginDropdown();
-  if(window._appReady){
-    if(window._currentView==='kanban') window.renderBoard();
-    if(window._currentView==='admin')  window.renderDeptTable();
-  }
-});
-onSnapshot(doc(db,"settings","admin"), snap => {
-  window._adminPass = snap.exists()?(snap.data().password||'saiko2025'):'saiko2025';
-  if(!snap.exists()) window._db.setSetting('admin',{password:'saiko2025'});
-});
-onSnapshot(doc(db,"settings","ui"), snap => {
-  if(snap.exists()) window._ui = snap.data();
-  else window._ui = {};
-  if(window._appReady) window.applyUI();
-});
-
-window._projects=[]; window._clients=[]; window._notifs=[];
-window._staff=[]; window._departments=[]; window._adminPass='saiko2025';
-window._ui={}; window._appReady=false; window._currentView='kanban';
-window.dispatchEvent(new Event('firebase-ready'));
-</script>
-
 <style>
 :root{
-  --blk:#0d0d0d;--dark:#141414;--card:#1c1c1c;--b1:#252525;--b2:#333;--g3:#555;--g4:#888;--g5:#bbb;
-  --grn:#5ec97a;--grn2:#1d3d29;--red:#e05252;--amber:#e09a34;--blue:#5b9bdb;
-  --rad:10px;--rads:6px;--card-rad:6px;--base-font:13px;
+  --blk:#0a0a0a;--dark:#111;--card:#181818;--b1:#222;--b2:#2e2e2e;
+  --g4:#777;--g5:#aaa;--g6:#e5e5e5;
+  --grn:#5ec97a;--grn2:#1a3d26;--grn3:#d4f5dc;
+  --red:#e05252;--amber:#e09a34;--blue:#5b9bdb;
+  --rad:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--dark);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-serif;font-size:var(--base-font);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-*{font-size:inherit;}
-#loader{position:fixed;inset:0;background:var(--blk);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
-.loader-logo{width:64px;height:64px;background:var(--grn);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#0d0d0d;}
-.spinner{width:32px;height:32px;border:3px solid var(--b2);border-top-color:var(--grn);border-radius:50%;animation:spin .8s linear infinite;}
-.loader-txt{font-size:13px;color:var(--g4);}
-@keyframes spin{to{transform:rotate(360deg)}}
-#authScreen{position:fixed;inset:0;background:var(--blk);display:none;align-items:center;justify-content:center;z-index:998;}
-#authScreen.open{display:flex;}
-.auth-box{background:var(--card);border:1px solid var(--b2);border-radius:16px;padding:36px;width:380px;}
-.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-.auth-logo-ico{width:44px;height:44px;background:var(--grn);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#0d0d0d;}
-.auth-title{font-size:17px;font-weight:700;}
-.auth-sub{font-size:11px;color:var(--g4);margin-top:2px;}
-.auth-err{background:#3d1e1e;color:#f08080;border-radius:var(--rads);padding:8px 12px;font-size:12px;margin-bottom:12px;display:none;}
-.fi{margin-bottom:14px;}
-.fi label{display:block;font-size:10.5px;font-weight:700;color:var(--g4);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
-.fi input,.fi select{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:9px 11px;font-size:13px;color:#f0f0f0;outline:none;}
-.fi input:focus,.fi select:focus{border-color:var(--grn);}
-.btn-login{width:100%;background:var(--grn);border:none;color:#0d0d0d;font-weight:700;padding:10px;border-radius:var(--rads);cursor:pointer;font-size:13px;margin-top:6px;}
-.admin-pass-screen{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:center;justify-content:center;}
-.admin-pass-screen.open{display:flex;}
-.admin-pass-box{background:var(--card);border:1px solid var(--b2);border-radius:16px;padding:32px;width:340px;text-align:center;}
-.admin-pass-box h2{font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;justify-content:center;}
-.admin-pass-box p{font-size:12px;color:var(--g4);margin-bottom:20px;}
-header{background:#111;border-bottom:1px solid var(--b1);padding:0 18px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logo-ico{width:30px;height:30px;background:var(--grn);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#0d0d0d;}
-.logo-text{font-size:14px;font-weight:700;}
-.logo-sub{font-size:10px;color:var(--g4);display:flex;align-items:center;gap:4px;}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.hdr-r{display:flex;align-items:center;gap:8px;}
-.icon-btn{background:none;border:1px solid var(--b2);border-radius:var(--rads);color:var(--g4);cursor:pointer;font-size:16px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;position:relative;}
-.icon-btn:hover{border-color:var(--g3);color:var(--g5);}
-.notif-dot{width:6px;height:6px;background:var(--red);border-radius:50%;position:absolute;top:-2px;right:-2px;display:none;}
-.btn-new{background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-.btn-new:hover{filter:brightness(1.1);}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--b2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--grn);border:1.5px solid var(--grn2);}
-.vt-group{display:flex;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);overflow:hidden;}
-.vt-btn{background:none;border:none;color:var(--g4);padding:5px 9px;cursor:pointer;font-size:14px;}
-.vt-btn.active{background:var(--b2);color:#f0f0f0;}
-.app-body{display:flex;flex:1;overflow:hidden;}
-aside{width:210px;background:#111;border-right:1px solid var(--b1);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
-.sb-sec{padding:14px 12px 6px;}
-.sb-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g3);margin-bottom:7px;}
-.nav-item{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:var(--rads);cursor:pointer;color:var(--g4);font-size:12px;margin-bottom:2px;transition:all .12s;}
-.nav-item:hover{background:var(--b1);color:#f0f0f0;}
-.nav-item.active{background:var(--grn2);color:var(--grn);}
-.nav-item i{font-size:14px;}
-.badge{background:var(--b2);color:var(--g4);font-size:10px;padding:1px 6px;border-radius:10px;margin-left:auto;}
-.badge.g{background:var(--grn2);color:var(--grn);}
-.sbdiv{border:none;border-top:1px solid var(--b1);margin:4px 12px;}
-.stat-m{display:flex;justify-content:space-between;padding:4px 9px;font-size:11px;color:var(--g4);}
-.stat-m span:last-child{font-weight:600;color:#f0f0f0;}
-.sb-foot{margin-top:auto;padding:10px 12px;border-top:1px solid var(--b1);}
-.cu-box{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--rads);background:var(--b1);}
-.cu-name{font-size:12px;font-weight:600;}
-.cu-role{font-size:10px;color:var(--g4);}
-#mainContent{flex:1;overflow:hidden;display:flex;flex-direction:column;}
-.toolbar{padding:10px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.search-w{flex:1;max-width:260px;position:relative;}
-.search-w i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--g3);}
-.search-inp{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px 6px 30px;font-size:12px;color:#f0f0f0;outline:none;}
-.fsel{background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px;font-size:12px;color:#f0f0f0;outline:none;cursor:pointer;}
-#kanbanView{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px;display:flex;gap:10px;align-items:flex-start;}
-.col{min-width:220px;max-width:234px;background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);flex-shrink:0;display:flex;flex-direction:column;max-height:calc(100vh - 122px);overflow:hidden;}
-.col-hdr{padding:11px 12px 9px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:7px;flex-shrink:0;}
-.col-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.col-title{font-size:11.5px;font-weight:700;flex:1;}
-.col-cnt{background:var(--b1);color:var(--g4);font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;}
-.col-body{padding:8px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;flex:1;}
-.col-body::-webkit-scrollbar{width:4px;}
-.col-body::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
-.view-panel::-webkit-scrollbar{width:6px;}
-.view-panel::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
-aside::-webkit-scrollbar{width:4px;}
-aside::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
-.drop-zone.drag-over{outline:2px dashed var(--grn);background:rgba(94,201,122,.04);}
-.card{background:#161616;border:1px solid var(--b1);border-radius:var(--card-rad);padding:10px 11px;cursor:grab;transition:border-color .15s,transform .1s;user-select:none;}
-.card:hover{border-color:var(--b2);transform:translateY(-1px);}
-.card.dragging{opacity:.4;transform:rotate(1.5deg);}
-.ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
-.cc{font-size:12px;font-weight:600;flex:1;line-height:1.3;}
-.cty{font-size:10px;color:var(--g4);margin-top:1px;}
-.urg{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
-.urg.h{background:var(--red);box-shadow:0 0 5px var(--red);}
-.urg.m{background:var(--amber);}
-.urg.l{background:var(--grn);}
-.cdl{display:flex;align-items:center;gap:4px;font-size:10px;margin-bottom:6px;}
-.cdl.h{color:var(--red);}.cdl.m{color:var(--amber);}.cdl.l{color:var(--g3);}
-.ctags{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;}
-.tag{background:var(--b1);color:var(--g4);font-size:9.5px;padding:2px 6px;border-radius:8px;}
-.tag.a{background:var(--grn2);color:var(--grn);}
-.cf{display:flex;align-items:center;justify-content:space-between;}
-.aa{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
-.pb{height:3px;background:var(--b2);border-radius:2px;overflow:hidden;}
-.pf{height:100%;background:var(--grn);border-radius:2px;}
-.view-panel{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;display:none;flex-direction:column;}
-.cal-day{min-height:70px;background:var(--card);border:1px solid var(--b1);border-radius:4px;padding:6px;cursor:default;transition:background .12s;}
-.cal-day:hover{background:var(--b1);}
-.cal-day.today{background:var(--grn2);border-color:var(--grn);}
-.cal-ev{border-radius:3px;padding:2px 5px;margin-bottom:3px;cursor:pointer;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tbl-hdr{display:grid;padding:10px 16px;border-bottom:1px solid var(--b1);font-size:10.5px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.4px;}
-.tbl-row{display:grid;padding:11px 16px;border-bottom:1px solid var(--b1);align-items:center;transition:background .1s;}
-.tbl-row:hover{background:var(--b1);}
-.clients-cols{grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 80px;}
-.staff-cols{grid-template-columns:1.5fr 1.5fr 1.2fr 1.5fr 1fr 100px;}
-.dept-cols{grid-template-columns:80px 1.5fr 80px 1fr 90px;}
-.admin-section{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);margin-bottom:18px;overflow:hidden;}
-.admin-section-hdr{padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;}
-.admin-section-hdr h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
-.admin-section-hdr h3 i{color:var(--grn);}
-.color-swatch{width:20px;height:20px;border-radius:50%;display:inline-block;}
-.notif-panel{position:fixed;top:54px;right:14px;width:300px;background:#1a1a1a;border:1px solid var(--b2);border-radius:var(--rad);z-index:100;display:none;max-height:70vh;overflow-y:auto;}
-.notif-panel.open{display:block;}
-.np-head{padding:11px 13px;font-size:12px;font-weight:700;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#1a1a1a;}
-.ni{padding:10px 13px;border-bottom:1px solid var(--b1);display:flex;gap:9px;}
-.ni-ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
-.ni-txt{font-size:11px;color:var(--g4);line-height:1.5;}
-.ni-txt strong{color:#f0f0f0;display:block;}
-.ni-time{font-size:9.5px;color:var(--g3);}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center;}
-.modal-bg.open{display:flex;}
-.modal{background:#1a1a1a;border:1px solid var(--b2);border-radius:var(--rad);width:480px;max-width:96vw;padding:24px;max-height:90vh;overflow-y:auto;}
-.modal h2{font-size:14px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
-.modal h2 i{color:var(--grn);}
-.fc2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.fr{margin-bottom:13px;}
-.fr label{display:block;font-size:10.5px;font-weight:700;color:var(--g4);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
-.fr input,.fr select,.fr textarea{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:8px 10px;font-size:12.5px;color:#f0f0f0;outline:none;font-family:inherit;}
-.fr input:focus,.fr select:focus,.fr textarea:focus{border-color:var(--grn);}
-.fr textarea{resize:vertical;min-height:58px;}
-.modal-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
-.btn-c{background:var(--b1);border:none;color:var(--g4);padding:7px 14px;border-radius:var(--rads);cursor:pointer;font-size:12px;}
-.btn-s{background:var(--grn);border:none;color:#0d0d0d;font-weight:700;padding:7px 16px;border-radius:var(--rads);cursor:pointer;font-size:12px;}
-.detail-modal{background:#1a1a1a;border:1px solid var(--b2);border-radius:var(--rad);width:540px;max-width:96vw;padding:24px;max-height:86vh;overflow-y:auto;}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.df{background:var(--b1);border-radius:var(--rads);padding:10px 12px;}
-.dfl{font-size:10px;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
-.dfv{font-size:13px;font-weight:500;}
-.task-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--b1);}
-.tck{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-.tck.done{background:var(--grn);border-color:var(--grn);color:#0d0d0d;}
-.prog-big{height:6px;background:var(--b1);border-radius:3px;overflow:hidden;}
-.prog-big-fill{height:100%;background:var(--grn);border-radius:3px;transition:width .3s;}
-.move-btn{background:var(--grn2);color:var(--grn);border:1px solid var(--grn2);border-radius:var(--rads);padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;margin-top:16px;width:100%;}
-.move-btn:hover{background:#1a4730;}
-/* SETTINGS UI */
-.ui-section{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);margin-bottom:16px;overflow:hidden;}
-.ui-section-hdr{padding:13px 18px;border-bottom:1px solid var(--b1);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
-.ui-section-hdr i{color:var(--grn);}
-.ui-body{padding:16px 18px;}
-.ui-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:16px;}
-.ui-row:last-child{margin-bottom:0;}
-.ui-lbl{font-size:12px;color:var(--g5);min-width:160px;}
-.ui-lbl small{display:block;font-size:10px;color:var(--g4);margin-top:2px;}
-.ui-ctrl{display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;}
-input[type=range]{-webkit-appearance:none;width:140px;height:4px;background:var(--b2);border-radius:2px;outline:none;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--grn);cursor:pointer;}
-input[type=color]{width:40px;height:32px;border:1px solid var(--b2);border-radius:var(--rads);background:none;cursor:pointer;padding:2px;}
-.preview-card{background:#161616;border:1px solid var(--b2);border-radius:var(--card-rad);padding:10px 12px;font-size:11px;width:160px;flex-shrink:0;}
-.preview-card .pc-title{font-weight:600;margin-bottom:4px;}
-.preview-card .pc-tag{display:inline-block;background:var(--grn2);color:var(--grn);font-size:9px;padding:1px 6px;border-radius:8px;}
-/* labels grid */
-.lbl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.lbl-item label{display:block;font-size:10px;color:var(--g4);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
-.lbl-item input{width:100%;background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px;font-size:12px;color:#f0f0f0;outline:none;}
-.lbl-item input:focus{border-color:var(--grn);}
-/* reports */
-.rpt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.metric{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:16px;}
-.metric-lbl{font-size:11px;color:var(--g4);margin-bottom:6px;}
-.metric-val{font-size:28px;font-weight:700;}
-.rpt-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
-.rpt-card{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:16px;}
-.rpt-card h3{font-size:12px;font-weight:700;margin-bottom:14px;color:var(--g5);}
-.br{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.bl{font-size:11px;color:var(--g4);width:100px;flex-shrink:0;text-align:right;}
-.bt{flex:1;height:8px;background:var(--b1);border-radius:4px;overflow:hidden;}
-.bf{height:100%;border-radius:4px;}
-.bv{font-size:11px;color:var(--g5);width:24px;text-align:right;}
-body.tv .card{padding:14px 16px;}
-body.tv .cc{font-size:16px;}
-body.tv .col{min-width:280px;max-width:300px;}
-body.tv .col-title{font-size:15px;}
-.toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:600;}
-.toast{background:#1a1a1a;border:1px solid var(--b2);border-radius:var(--rad);padding:11px 15px;font-size:12px;display:flex;align-items:center;gap:10px;min-width:260px;animation:tIn .25s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);}
-.toast.success i{color:var(--grn);}
-.toast.info i{color:var(--blue);}
-.toast.warning i{color:var(--amber);}
-.toast.error i{color:var(--red);}
-@keyframes tIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+html{scroll-behavior:smooth;}
+body{background:var(--blk);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo-ico{width:32px;height:32px;background:var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#0a0a0a;}
+.nav-logo-text{font-size:15px;font-weight:700;}
+.nav-logo-sub{font-size:10px;color:var(--g4);}
+.nav-links{display:flex;align-items:center;gap:28px;}
+.nav-links a{color:var(--g5);text-decoration:none;font-size:13.5px;transition:color .15s;}
+.nav-links a:hover{color:#f0f0f0;}
+.nav-cta{background:var(--grn);color:#0a0a0a;border:none;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:filter .15s;}
+.nav-cta:hover{filter:brightness(1.1);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(94,201,122,.08) 0%,transparent 70%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--grn2);color:var(--grn);border:1px solid var(--grn);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;margin-bottom:28px;letter-spacing:.3px;}
+.hero h1{font-size:clamp(36px,6vw,72px);font-weight:800;line-height:1.1;margin-bottom:20px;letter-spacing:-1.5px;}
+.hero h1 span{color:var(--grn);}
+.hero p{font-size:clamp(15px,2vw,19px);color:var(--g5);max-width:620px;margin:0 auto 36px;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-primary{background:var(--grn);color:#0a0a0a;border:none;border-radius:10px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:filter .15s;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-secondary{background:transparent;color:#f0f0f0;border:1px solid var(--b2);border-radius:10px;padding:13px 28px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:border-color .15s;}
+.btn-secondary:hover{border-color:var(--g4);}
+.hero-stats{display:flex;gap:40px;justify-content:center;margin-top:60px;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-val{font-size:32px;font-weight:800;color:var(--grn);}
+.stat-lbl{font-size:12px;color:var(--g4);margin-top:2px;}
+
+/* MOCK KANBAN */
+.mock-wrap{padding:0 24px 80px;max-width:1100px;margin:0 auto;}
+.mock-label{text-align:center;font-size:12px;color:var(--g4);margin-bottom:16px;letter-spacing:.5px;text-transform:uppercase;}
+.mock-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;}
+.mock-board::-webkit-scrollbar{height:4px;}
+.mock-board::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.mock-col{min-width:180px;background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:10px;flex-shrink:0;}
+.mock-col-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.mock-dot{width:7px;height:7px;border-radius:50%;}
+.mock-col-title{font-size:11px;font-weight:700;flex:1;}
+.mock-cnt{background:var(--b1);color:var(--g4);font-size:9px;padding:1px 5px;border-radius:6px;}
+.mock-card{background:#101010;border:1px solid var(--b1);border-radius:6px;padding:8px 9px;margin-bottom:6px;}
+.mock-card:last-child{margin-bottom:0;}
+.mock-client{font-size:11px;font-weight:600;}
+.mock-type{font-size:9.5px;color:var(--g4);margin-top:1px;}
+.mock-tag{display:inline-block;background:var(--grn2);color:var(--grn);font-size:8.5px;padding:1px 6px;border-radius:6px;margin-top:5px;}
+.mock-tag.r{background:#3d1e1e;color:var(--red);}
+.mock-tag.a{background:#3d2a00;color:var(--amber);}
+.mock-prog{display:flex;align-items:center;gap:5px;margin-top:6px;}
+.mock-pb{flex:1;height:2.5px;background:var(--b2);border-radius:2px;overflow:hidden;}
+.mock-pf{height:100%;background:var(--grn);border-radius:2px;}
+.mock-pt{font-size:8.5px;color:var(--g4);}
+
+/* SECTIONS */
+section{padding:80px 24px;}
+.section-inner{max-width:1080px;margin:0 auto;}
+.section-badge{display:inline-flex;align-items:center;gap:6px;background:var(--b1);color:var(--g5);border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600;margin-bottom:16px;letter-spacing:.3px;}
+.section-badge i{color:var(--grn);font-size:13px;}
+h2{font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:14px;}
+h2 span{color:var(--grn);}
+.section-sub{font-size:16px;color:var(--g5);max-width:560px;line-height:1.7;margin-bottom:48px;}
+
+/* FEATURES GRID */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.feat{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:24px;transition:border-color .2s;}
+.feat:hover{border-color:var(--b2);}
+.feat-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px;}
+.feat h3{font-size:15px;font-weight:700;margin-bottom:7px;}
+.feat p{font-size:13.5px;color:var(--g5);line-height:1.6;}
+
+/* FLOW */
+.flow{display:flex;gap:0;overflow-x:auto;margin-bottom:48px;padding-bottom:4px;}
+.flow::-webkit-scrollbar{height:3px;}
+.flow::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.flow-step{display:flex;align-items:center;gap:0;flex-shrink:0;}
+.flow-box{background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:14px 18px;min-width:160px;text-align:center;}
+.flow-num{font-size:11px;color:var(--grn);font-weight:700;margin-bottom:4px;}
+.flow-title{font-size:13px;font-weight:700;}
+.flow-sub{font-size:11px;color:var(--g4);margin-top:3px;}
+.flow-arrow{padding:0 8px;color:var(--g4);font-size:18px;flex-shrink:0;}
+
+/* WHY */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:640px){.why-grid{grid-template-columns:1fr;}}
+.why-item{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:20px;}
+.why-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.why-item h4{font-size:14px;font-weight:700;margin-bottom:5px;}
+.why-item p{font-size:13px;color:var(--g5);line-height:1.6;}
+
+/* TECH STACK */
+.tech-grid{display:flex;flex-wrap:wrap;gap:10px;}
+.tech-pill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:8px 14px;font-size:13px;}
+.tech-pill i{font-size:16px;color:var(--grn);}
+
+/* CTA SECTION */
+.cta-section{background:var(--card);border:1px solid var(--b1);border-radius:20px;padding:60px 40px;text-align:center;margin:0 24px 80px;max-width:900px;margin-left:auto;margin-right:auto;}
+.cta-section h2{margin-bottom:14px;}
+.cta-section p{color:var(--g5);font-size:16px;max-width:480px;margin:0 auto 32px;}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-logo{display:flex;align-items:center;gap:8px;}
+.footer-copy{font-size:12px;color:var(--g4);}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{color:var(--g4);text-decoration:none;font-size:12.5px;}
+.footer-links a:hover{color:#f0f0f0;}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--b1);margin:0;}
+
+/* ANIMATIONS */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+
+@media(max-width:768px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .hero{padding:90px 20px 50px;}
+  .hero-stats{gap:24px;}
+  section{padding:56px 20px;}
+  .cta-section{padding:40px 24px;margin:0 16px 60px;}
+  footer{padding:24px 20px;}
+}
 </style>
 </head>
 <body>
 
-<div id="loader">
-  <div class="loader-logo">SM</div>
-  <div class="spinner"></div>
-  <div class="loader-txt">Conectare Firebase…</div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-ico">K</div>
+    <div>
+      <div class="nav-logo-text">Krennic PMS</div>
+      <div class="nav-logo-sub">Production Management</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Funcționalități</a>
+    <a href="#flow">Flux de lucru</a>
+    <a href="#why">De ce Saiko?</a>
+    <a href="#tech">Tehnologie</a>
+  </div>
+  <a href="/index.html" class="nav-cta"><i class="ti ti-arrow-right"></i> Deschide Aplicația</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-badge"><span class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--grn);display:inline-block;animation:pulse 2s infinite"></span> Live · Firestore · PWA</div>
+  <h1>Producție fără<br><span>haos</span></h1>
+  <p>Krennic PMS este sistemul de management al producției construit special pentru companii de publicitate și semnalistică. De la comandă la montaj — totul vizibil, în timp real, pe orice dispozitiv.</p>
+  <div class="hero-btns">
+    <a href="/index.html" class="btn-primary"><i class="ti ti-layout-kanban"></i> Deschide Dashboard</a>
+    <a href="#features" class="btn-secondary"><i class="ti ti-arrow-down"></i> Descoperă mai mult</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-val">5</div><div class="stat-lbl">Etape de producție</div></div>
+    <div class="stat"><div class="stat-val">∞</div><div class="stat-lbl">Proiecte simultane</div></div>
+    <div class="stat"><div class="stat-val">10</div><div class="stat-lbl">Limbi disponibile</div></div>
+    <div class="stat"><div class="stat-val">0s</div><div class="stat-lbl">Timp de sincronizare</div></div>
+  </div>
+</section>
+
+<!-- MOCK KANBAN -->
+<div class="mock-wrap fade-in">
+  <div class="mock-label">— Dashboard Kanban live —</div>
+  <div class="mock-board">
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#5b9bdb"></div><div class="mock-col-title">Comenzi Noi</div><div class="mock-cnt">3</div></div>
+      <div class="mock-card"><div class="mock-client">Kaufland România</div><div class="mock-type">Litere volumetrice inox</div><span class="mock-tag r">Urgent</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:10%"></div></div><span class="mock-pt">10%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Digi Romania</div><div class="mock-type">Totem publicitar</div><span class="mock-tag a">Mediu</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:5%"></div></div><span class="mock-pt">5%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#b07fe0"></div><div class="mock-col-title">Proiectare Grafică</div><div class="mock-cnt">2</div></div>
+      <div class="mock-card"><div class="mock-client">Coca Cola</div><div class="mock-type">Casetă luminoasă LED</div><span class="mock-tag">Design activ</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:45%"></div></div><span class="mock-pt">45%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Renault România</div><div class="mock-type">Branding showroom</div><span class="mock-tag">Concept</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:30%"></div></div><span class="mock-pt">30%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#e09a34"></div><div class="mock-col-title">Proiectare Tehnică</div><div class="mock-cnt">2</div></div>
+      <div class="mock-card"><div class="mock-client">Lidl România</div><div class="mock-type">Signalistică direcțională</div><span class="mock-tag">La scară</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:65%"></div></div><span class="mock-pt">65%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Penny România</div><div class="mock-type">Panou LED exterior</div><span class="mock-tag">AutoCAD</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:50%"></div></div><span class="mock-pt">50%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#5ec97a"></div><div class="mock-col-title">Producție Atelier</div><div class="mock-cnt">3</div></div>
+      <div class="mock-card"><div class="mock-client">Carrefour</div><div class="mock-type">Litere canal inox</div><span class="mock-tag">Pe bancul de lucru</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:80%"></div></div><span class="mock-pt">80%</span></div></div>
+      <div class="mock-card"><div class="mock-client">BAT</div><div class="mock-type">Casetă iluminată</div><span class="mock-tag">Finisaj</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:70%"></div></div><span class="mock-pt">70%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#e05252"></div><div class="mock-col-title">Implementare</div><div class="mock-cnt">1</div></div>
+      <div class="mock-card"><div class="mock-client">Credit Europe Bank</div><div class="mock-type">Totem exterior 5m</div><span class="mock-tag r">Montaj azi</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:93%"></div></div><span class="mock-pt">93%</span></div></div>
+    </div>
+  </div>
 </div>
 
-<div id="authScreen">
-  <div class="auth-box">
-    <div class="auth-logo">
-      <div class="auth-logo-ico">SM</div>
-      <div><div class="auth-title">Saiko Media & Signs</div><div class="auth-sub">Production Management System</div></div>
-    </div>
-    <div class="auth-err" id="authErr">Utilizator sau parolă incorectă.</div>
-    <div class="fi"><label>Selectează</label><select id="loginUser"><option value="">— alege —</option></select></div>
-    <div class="fi"><label>Parolă</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn-login" onclick="doLogin()"><i class="ti ti-login"></i> <span data-t="login">Intră în sistem</span></button>
-  </div>
-</div>
+<hr class="divider">
 
-<div class="admin-pass-screen" id="adminPassScreen">
-  <div class="admin-pass-box">
-    <h2><i class="ti ti-shield-lock" style="color:var(--amber)"></i> Admin Panel</h2>
-    <p data-t="adminPassHint">Introduceți parola de Admin.</p>
-    <div class="fi"><label data-t="password">Parolă</label><input type="password" id="adminPassInp" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPass()"></div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn-c" style="flex:1" onclick="$('adminPassScreen').classList.remove('open')" data-t="cancel">Anulează</button>
-      <button class="btn-s" style="flex:1" onclick="checkAdminPass()"><i class="ti ti-check"></i> <span data-t="enter">Intră</span></button>
-    </div>
-  </div>
-</div>
-
-<header>
-  <div class="logo">
-    <div class="logo-ico">SM</div>
-    <div><div class="logo-text">Saiko Media & Signs</div><div class="logo-sub"><span class="sync-dot"></span>Live · Firestore</div></div>
-  </div>
-  <div class="hdr-r">
-    <div class="vt-group">
-      <button class="vt-btn active" id="vt-kanban"  onclick="switchView('kanban')"  title="Kanban"><i class="ti ti-layout-kanban"></i></button>
-      <button class="vt-btn"        id="vt-reports" onclick="switchView('reports')" title="Rapoarte"><i class="ti ti-chart-bar"></i></button>
-    </div>
-    <button class="icon-btn" id="tvBtn" onclick="toggleTV()" title="TV Mode"><i class="ti ti-device-tv"></i></button>
-    <button class="icon-btn" onclick="toggleNotif()"><i class="ti ti-bell"></i><div class="notif-dot" id="notifDot"></div></button>
-    <button class="btn-new" onclick="openModal('project')"><i class="ti ti-plus"></i> <span data-t="newProject">Proiect Nou</span></button>
-    <div class="avatar" id="userAvatar">—</div>
-  </div>
-</header>
-
-<div class="notif-panel" id="notifPanel">
-  <div class="np-head"><span data-t="notifications">Notificări</span> <span id="notifCount">0</span></div>
-  <div id="notifList"></div>
-</div>
-
-<div class="app-body">
-<aside>
-  <div class="sb-sec">
-    <div class="sb-lbl" data-t="production">Producție</div>
-    <div class="nav-item active" id="nav-kanban"   onclick="switchView('kanban')"><i class="ti ti-layout-kanban"></i> Kanban <span class="badge g" id="sb-active">0</span></div>
-    <div class="nav-item"        id="nav-calendar" onclick="switchView('calendar')"><i class="ti ti-calendar"></i> <span data-t="calendar">Calendar</span></div>
-    <div class="nav-item"        id="nav-reports"  onclick="switchView('reports')"><i class="ti ti-chart-bar"></i> <span data-t="reports">Rapoarte</span></div>
-  </div>
-  <hr class="sbdiv">
-  <div class="sb-sec">
-    <div class="sb-lbl" data-t="data">Date</div>
-    <div class="nav-item" id="nav-clients" onclick="switchView('clients')"><i class="ti ti-users"></i> <span data-t="clients">Clienți</span></div>
-    <div class="nav-item" id="nav-staff"   onclick="switchView('staff')"><i class="ti ti-id-badge"></i> <span data-t="team">Echipă</span></div>
-  </div>
-  <hr class="sbdiv">
-  <div class="sb-sec">
-    <div class="sb-lbl" data-t="system">Sistem</div>
-    <div class="nav-item" id="nav-admin"    onclick="openAdminPanel()"><i class="ti ti-settings" style="color:var(--amber)"></i> <span style="color:var(--amber)">Admin Panel</span></div>
-    <div class="nav-item" id="nav-settings" onclick="switchView('settings')"><i class="ti ti-palette"></i> <span data-t="uiSettings">Interfață</span></div>
-  </div>
-  <hr class="sbdiv">
-  <div class="sb-sec">
-    <div class="sb-lbl" data-t="summary">Sumar Live</div>
-    <div class="stat-m"><span data-t="projects">Proiecte</span><span id="sb-cnt">0</span></div>
-    <div class="stat-m"><span data-t="urgent">Urgente</span><span style="color:var(--red)" id="sb-urg">0</span></div>
-    <div class="stat-m"><span data-t="team">Echipă</span><span id="sb-staff">0</span></div>
-  </div>
-  <div class="sb-foot">
-    <div class="cu-box">
-      <div class="aa" id="sbAvatar" style="width:28px;height:28px;font-size:11px;background:var(--grn2);color:var(--grn)">—</div>
-      <div><div class="cu-name" id="sbName">—</div><div class="cu-role" id="sbRole">—</div></div>
-    </div>
-  </div>
-</aside>
-
-<div id="mainContent">
-  <div class="toolbar" id="boardToolbar">
-    <div class="search-w"><i class="ti ti-search"></i><input class="search-inp" id="searchInp" placeholder="Caută…" oninput="filterCards()"></div>
-    <select class="fsel" id="urgFilter" onchange="filterCards()">
-      <option value="" data-t="allUrgencies">Toate urgențele</option>
-      <option value="h" data-t="urgent">🔴 Urgent</option>
-      <option value="m" data-t="medium">🟡 Mediu</option>
-      <option value="l" data-t="normal">🟢 Normal</option>
-    </select>
-    <select class="fsel" id="assignFilter" onchange="filterCards()"><option value="" data-t="allStaff">Toți responsabilii</option></select>
-    <span style="font-size:11px;color:var(--g3);margin-left:auto" id="filterStatus">0 proiecte</span>
-  </div>
-
-  <div id="kanbanView" style="flex:1;overflow-x:auto;overflow-y:hidden;padding:14px;display:flex;gap:10px;align-items:flex-start;"></div>
-
-  <div id="reportsView" class="view-panel">
-    <div class="rpt-grid">
-      <div class="metric"><div class="metric-lbl" data-t="activeProjects">Proiecte Active</div><div class="metric-val" style="color:var(--grn)" id="rpt-active">0</div></div>
-      <div class="metric"><div class="metric-lbl" data-t="urgent">Urgente</div><div class="metric-val" style="color:var(--red)" id="rpt-urg">0</div></div>
-      <div class="metric"><div class="metric-lbl" data-t="clients">Clienți</div><div class="metric-val" id="rpt-cl">0</div></div>
-      <div class="metric"><div class="metric-lbl" data-t="team">Echipă</div><div class="metric-val" id="rpt-st">0</div></div>
-    </div>
-    <div class="rpt-row">
-      <div class="rpt-card"><h3 data-t="stageDistrib">Distribuție pe Etape</h3><div id="rpt-stages"></div></div>
-      <div class="rpt-card"><h3 data-t="urgencyDistrib">Distribuție Urgențe</h3><div id="rpt-urgs"></div></div>
-    </div>
-    <div class="rpt-card"><h3 data-t="teamProjects">Echipă & Proiecte</h3><div id="rpt-team" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px"></div></div>
-  </div>
-
-  <div id="calendarView" class="view-panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button onclick="calNav(-1)" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-chevron-left"></i></button>
-        <span id="calTitle" style="font-size:15px;font-weight:700;min-width:160px;text-align:center"></span>
-        <button onclick="calNav(1)"  style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-chevron-right"></i></button>
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-sparkles"></i> Funcționalități</div>
+    <h2 class="fade-in">Tot ce ai nevoie,<br><span>nimic în plus</span></h2>
+    <p class="section-sub fade-in">Un sistem curat, fără birocrație. Fiecare funcție are un scop clar — să îți salveze timp și să elimine confuzia din producție.</p>
+    <div class="features-grid">
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-layout-kanban" style="color:#5b9bdb"></i></div>
+        <h3>Kanban Board Live</h3>
+        <p>Vizualizează toate proiectele pe coloane de producție. Drag & drop pentru a muta un proiect la etapa următoare. Orice schimbare apare instant pe toate dispozitivele.</p>
       </div>
-      <button onclick="calGoToday()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);color:#f0f0f0;padding:6px 14px;cursor:pointer;font-size:12px;" data-t="today">Azi</button>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;" id="calDayNames"></div>
-    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1;"></div>
-  </div>
-
-  <div id="clientsView" class="view-panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div><div style="font-size:15px;font-weight:700" data-t="clientsDB">Baza de Date Clienți</div><div style="font-size:11px;color:var(--g4);margin-top:2px">Firestore</div></div>
-      <div style="display:flex;gap:8px;">
-        <div style="position:relative"><i class="ti ti-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--g3);font-size:13px"></i><input id="clientSearch" oninput="renderClients()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:6px 9px 6px 28px;font-size:12px;color:#f0f0f0;outline:none;width:180px;"></div>
-        <button onclick="openModal('client')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> <span data-t="newClient">Client Nou</span></button>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:var(--grn2)"><i class="ti ti-refresh" style="color:var(--grn)"></i></div>
+        <h3>Sincronizare în Timp Real</h3>
+        <p>Bazat pe Firebase Firestore. Directorul vede pe laptop ce face atelierul pe tabletă, în același moment. Fără refresh, fără email, fără telefon inutil.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#2a1e3d"><i class="ti ti-bell-ringing" style="color:#b07fe0"></i></div>
+        <h3>Notificări Automate</h3>
+        <p>Când un proiect trece în Grafică, designerii sunt notificați instant. Când planurile tehnice sunt gata, atelierul primește sarcina. Zero intermediari.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#3d2a00"><i class="ti ti-shield-lock" style="color:var(--amber)"></i></div>
+        <h3>Permisiuni pe Departament</h3>
+        <p>Atelierul poate muta proiecte doar spre Implementare. Grafica — doar spre Tehnic. Nimeni nu poate sări etape sau muta în sens invers. Flux controlat.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-users" style="color:var(--grn)"></i></div>
+        <h3>Gestiune Echipă & Clienți</h3>
+        <p>Baza de date completă cu angajați, departamente, clienți și contacte. Totul accesibil din același loc, sincronizat cu proiectele active.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a2d3d"><i class="ti ti-device-mobile" style="color:var(--blue)"></i></div>
+        <h3>PWA – Instalabil pe Telefon</h3>
+        <p>Se instalează pe ecranul principal al oricărui telefon sau tabletă ca o aplicație nativă. Funcționează inclusiv pe televizoarele din atelier.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-calendar" style="color:var(--grn)"></i></div>
+        <h3>Calendar Deadline-uri</h3>
+        <p>Vizualizare lunară cu toate deadline-urile. Click pe orice proiect din calendar deschide fișa completă. Niciun termen nu mai trece neobservat.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-chart-bar" style="color:var(--blue)"></i></div>
+        <h3>Rapoarte & Statistici Live</h3>
+        <p>Distribuție proiecte pe etape, urgențe, performanța echipei. Datele se actualizează în timp real, direct din Firestore.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a1e2e"><i class="ti ti-palette" style="color:var(--blue)"></i></div>
+        <h3>Interfață Personalizabilă</h3>
+        <p>Culori, mărimi de font, formă carduri — toate setabile din panoul de Interfață. 10 limbi disponibile, salvate automat în cloud.</p>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="totalClients">Total Clienți</div><div style="font-size:22px;font-weight:700;color:var(--grn)" id="stat-total">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="withProjects">Cu Proiecte</div><div style="font-size:22px;font-weight:700" id="stat-active">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="totalProjects">Total Proiecte</div><div style="font-size:22px;font-weight:700;color:var(--amber)" id="stat-proj">0</div></div>
-      <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:14px;"><div style="font-size:10px;color:var(--g4);margin-bottom:4px" data-t="urgent">Urgente</div><div style="font-size:22px;font-weight:700;color:var(--red)" id="stat-urg2">0</div></div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);overflow:hidden;">
-      <div class="tbl-hdr clients-cols"><span data-t="client">Client</span><span data-t="contact">Contact</span><span data-t="projects">Proiecte</span><span data-t="deadline">Deadline</span><span>Status</span><span></span></div>
-      <div id="clientsList"></div>
-    </div>
   </div>
+</section>
 
-  <div id="staffView" class="view-panel">
-    <div style="margin-bottom:18px;"><div style="font-size:15px;font-weight:700" data-t="teamSaiko">Echipa Saiko</div></div>
-    <div id="staffCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
-  </div>
+<hr class="divider">
 
-  <!-- SETTINGS UI -->
-  <div id="settingsView" class="view-panel">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-      <div style="width:36px;height:36px;background:#1a1e2e;border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-palette" style="color:var(--blue);font-size:18px"></i></div>
-      <div><div style="font-size:15px;font-weight:700" data-t="uiSettings">Setări Interfață</div><div style="font-size:11px;color:var(--g4)">Salvat automat în Firestore</div></div>
-    </div>
-
-    <!-- Langue -->
-    <div class="ui-section">
-      <div class="ui-section-hdr"><i class="ti ti-world"></i> <span data-t="language">Limbă</span></div>
-      <div class="ui-body">
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="selectLanguage">Selectează limba interfeței</span></div>
-          <div class="ui-ctrl">
-            <select id="uiLang" onchange="onLangChange()" style="background:var(--b1);border:1px solid var(--b2);border-radius:var(--rads);padding:7px 10px;font-size:13px;color:#f0f0f0;outline:none;cursor:pointer;min-width:180px;">
-              <option value="ro">🇷🇴 Română</option>
-              <option value="en">🇬🇧 English</option>
-              <option value="de">🇩🇪 Deutsch</option>
-              <option value="fr">🇫🇷 Français</option>
-              <option value="it">🇮🇹 Italiano</option>
-              <option value="es">🇪🇸 Español</option>
-              <option value="hu">🇭🇺 Magyar</option>
-              <option value="bg">🇧🇬 Български</option>
-              <option value="uk">🇺🇦 Українська</option>
-              <option value="nl">🇳🇱 Nederlands</option>
-            </select>
-          </div>
+<!-- FLOW -->
+<section id="flow" style="background:var(--dark)">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-arrow-right"></i> Flux de lucru</div>
+    <h2 class="fade-in">De la comandă<br><span>la montaj</span></h2>
+    <p class="section-sub fade-in">Un flux logic, în 5 etape. Fiecare departament vede exact ce trebuie să facă, când trebuie să facă, fără să se amestece în treaba celorlalți.</p>
+    <div class="flow fade-in">
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#5b9bdb33">
+          <div class="flow-num" style="color:#5b9bdb">01</div>
+          <div class="flow-title">Comandă Nouă</div>
+          <div class="flow-sub">Brief, contract, date client</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#b07fe033">
+          <div class="flow-num" style="color:#b07fe0">02</div>
+          <div class="flow-title">Proiectare Grafică</div>
+          <div class="flow-sub">Concept, machetare, aprobare</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#e09a3433">
+          <div class="flow-num" style="color:#e09a34">03</div>
+          <div class="flow-title">Proiectare Tehnică</div>
+          <div class="flow-sub">AutoCAD, debitare optimizată</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#5ec97a33">
+          <div class="flow-num" style="color:#5ec97a">04</div>
+          <div class="flow-title">Producție Atelier</div>
+          <div class="flow-sub">Debitare, sudură, finisare</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#e0525233">
+          <div class="flow-num" style="color:#e05252">05</div>
+          <div class="flow-title">Implementare</div>
+          <div class="flow-sub">Montaj, recepție, finalizare</div>
         </div>
       </div>
     </div>
-
-    <!-- Colors -->
-    <div class="ui-section">
-      <div class="ui-section-hdr"><i class="ti ti-color-swatch"></i> <span data-t="colors">Culori</span></div>
-      <div class="ui-body">
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="accentColor">Culoare accent</span><small data-t="accentColorHint">Butoane, progres, highlight</small></div>
-          <div class="ui-ctrl"><input type="color" id="uiAccent" value="#5ec97a" oninput="previewUI()"><span id="uiAccentVal" style="font-size:11px;color:var(--g4)">#5ec97a</span></div>
-        </div>
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="urgentColor">Culoare Urgent</span></div>
-          <div class="ui-ctrl"><input type="color" id="uiRed" value="#e05252" oninput="previewUI()"><span id="uiRedVal" style="font-size:11px;color:var(--g4)">#e05252</span></div>
-        </div>
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="mediumColor">Culoare Mediu</span></div>
-          <div class="ui-ctrl"><input type="color" id="uiAmber" value="#e09a34" oninput="previewUI()"><span id="uiAmberVal" style="font-size:11px;color:var(--g4)">#e09a34</span></div>
-        </div>
+    <div class="why-grid fade-in">
+      <div class="why-item">
+        <div class="why-ico" style="background:var(--grn2)"><i class="ti ti-lock" style="color:var(--grn)"></i></div>
+        <div><h4>Flux unidirecțional</h4><p>Proiectele se mișcă doar înainte. Fiecare departament are acces doar la etapa lui și la cea următoare.</p></div>
       </div>
-    </div>
-
-    <!-- Typography & Shape -->
-    <div class="ui-section">
-      <div class="ui-section-hdr"><i class="ti ti-typography"></i> <span data-t="typographyShape">Font & Formă</span></div>
-      <div class="ui-body">
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="fontSize">Mărime font</span><small id="fontSizeVal">13px</small></div>
-          <div class="ui-ctrl">
-            <span style="font-size:10px;color:var(--g4)">A</span>
-            <input type="range" id="uiFontSize" min="11" max="18" value="13" oninput="previewUI()">
-            <span style="font-size:15px;color:var(--g4)">A</span>
-          </div>
-        </div>
-        <div class="ui-row">
-          <div class="ui-lbl"><span data-t="cardRadius">Rotunjire carduri</span><small id="cardRadVal">6px</small></div>
-          <div class="ui-ctrl">
-            <span style="font-size:11px;color:var(--g4)">▬</span>
-            <input type="range" id="uiCardRad" min="0" max="20" value="6" oninput="previewUI()">
-            <span style="font-size:11px;color:var(--g4)">⬭</span>
-          </div>
-        </div>
-        <!-- Preview card -->
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--b1);display:flex;align-items:center;gap:12px;">
-          <span style="font-size:11px;color:var(--g4)" data-t="preview">Previzualizare:</span>
-          <div class="preview-card" id="previewCard">
-            <div class="pc-title">Client Exemplu</div>
-            <div style="font-size:9px;color:var(--g4);margin-bottom:6px">Litere volumetrice</div>
-            <span class="pc-tag" id="previewTag">Activ</span>
-          </div>
-        </div>
+      <div class="why-item">
+        <div class="why-ico" style="background:#3d2a00"><i class="ti ti-clock" style="color:var(--amber)"></i></div>
+        <div><h4>Deadline-uri vizibile pentru toți</h4><p>Fiecare card afișează data limită cu indicator de urgență. Roșu înseamnă azi sau mâine — imposibil de ignorat.</p></div>
       </div>
-    </div>
-
-    <!-- Labels -->
-    <div class="ui-section">
-      <div class="ui-section-hdr"><i class="ti ti-forms"></i> <span data-t="customLabels">Etichete personalizate</span></div>
-      <div class="ui-body">
-        <div class="lbl-grid" id="labelsGrid"></div>
+      <div class="why-item">
+        <div class="why-ico" style="background:#1e2d4a"><i class="ti ti-list-check" style="color:var(--blue)"></i></div>
+        <div><h4>Task-uri pe proiect</h4><p>Fiecare proiect are o listă de task-uri cu progres automat calculat pe măsură ce le bifezi.</p></div>
       </div>
-    </div>
-
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px">
-      <button onclick="resetUI()" style="background:var(--b1);border:none;color:var(--g4);padding:8px 16px;border-radius:var(--rads);cursor:pointer;font-size:12px;" data-t="reset">Resetează</button>
-      <button onclick="saveUI()" style="background:var(--grn);border:none;color:#0d0d0d;font-weight:700;padding:8px 18px;border-radius:var(--rads);cursor:pointer;font-size:12px;"><i class="ti ti-check"></i> <span data-t="saveSettings">Salvează Setările</span></button>
-    </div>
-  </div>
-
-  <!-- ADMIN -->
-  <div id="adminView" class="view-panel">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-      <div style="width:36px;height:36px;background:#3d2a00;border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="ti ti-shield-lock" style="color:var(--amber);font-size:18px"></i></div>
-      <div><div style="font-size:15px;font-weight:700">Admin Panel</div><div style="font-size:11px;color:var(--g4)" data-t="restrictedAccess">Acces restricționat</div></div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-hdr">
-        <h3><i class="ti ti-users"></i> <span data-t="employees">Angajați</span></h3>
-        <button onclick="openModal('staff')" style="background:var(--grn);color:#0d0d0d;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-user-plus"></i> <span data-t="newEmployee">Angajat Nou</span></button>
-      </div>
-      <div class="tbl-hdr staff-cols"><span data-t="firstName">Prenume</span><span data-t="lastName">Nume</span><span data-t="department">Departament</span><span>Email</span><span data-t="phone">Telefon</span><span data-t="actions">Acțiuni</span></div>
-      <div id="staffTable"></div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-hdr">
-        <h3><i class="ti ti-layout-columns"></i> <span data-t="kanbanCols">Coloane Kanban</span></h3>
-        <button onclick="openModal('dept')" style="background:var(--b2);color:#f0f0f0;border:none;border-radius:var(--rads);padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ti ti-plus"></i> <span data-t="newColumn">Coloană Nouă</span></button>
-      </div>
-      <div class="tbl-hdr dept-cols"><span data-t="order">Ordine</span><span data-t="name">Denumire</span><span data-t="color">Culoare</span><span data-t="loginPass">Parolă login</span><span data-t="actions">Acțiuni</span></div>
-      <div id="deptTable"></div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-hdr"><h3><i class="ti ti-key"></i> <span data-t="adminPassword">Parolă Admin</span></h3></div>
-      <div style="padding:16px;display:flex;gap:10px;align-items:flex-end;">
-        <div class="fr" style="margin:0;flex:1"><label data-t="newPassword">Parolă nouă</label><input type="password" id="newAdminPass" placeholder="min. 6 caractere"></div>
-        <button onclick="changeAdminPass()" style="background:var(--amber);color:#0d0d0d;border:none;border-radius:var(--rads);padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;" data-t="save">Salvează</button>
+      <div class="why-item">
+        <div class="why-ico" style="background:#2a1e3d"><i class="ti ti-bell" style="color:#b07fe0"></i></div>
+        <div><h4>Notificări la fiecare tranziție</h4><p>Când un proiect trece la etapa următoare, departamentul destinatar primește notificare push instant.</p></div>
       </div>
     </div>
   </div>
-</div><!-- /mainContent -->
-</div><!-- /app-body -->
+</section>
 
-<!-- MODAL PROIECT -->
-<div class="modal-bg" id="projectModal" onclick="if(event.target===this)closeModal('project')">
-  <div class="modal">
-    <h2><i class="ti ti-circle-plus"></i> <span data-t="newProject">Proiect Nou</span></h2>
-    <div class="fc2">
-      <div class="fr"><label data-t="client">Client *</label><input type="text" id="nClient"></div>
-      <div class="fr"><label data-t="productType">Tip Produs</label><select id="nType"><option>Litere volumetrice</option><option>Casetă luminoasă</option><option>Totem publicitar</option><option>Panou LED</option><option>Signalistică</option><option>Branding showroom</option><option>Litere canal inox</option><option>Altele</option></select></div>
-    </div>
-    <div class="fc2">
-      <div class="fr"><label data-t="deadline">Dată Limită</label><input type="date" id="nDate"></div>
-      <div class="fr"><label data-t="responsible">Responsabil</label><select id="nResp"><option value="">— alege —</option></select></div>
-    </div>
-    <div class="fc2">
-      <div class="fr"><label data-t="materials">Materiale</label><input type="text" id="nMat"></div>
-      <div class="fr"><label data-t="urgency">Urgență</label><select id="nUrg"><option value="l">🟢 Normal</option><option value="m">🟡 Mediu</option><option value="h">🔴 Urgent</option></select></div>
-    </div>
-    <div class="fr"><label data-t="notes">Note</label><textarea id="nNotes"></textarea></div>
-    <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('project')" data-t="cancel">Anulează</button>
-      <button class="btn-s" onclick="saveProject()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
+<hr class="divider">
+
+<!-- WHY -->
+<section id="why">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-trophy"></i> De ce Saiko PMS?</div>
+    <h2 class="fade-in">Nu e un alt tool<br><span>generic</span></h2>
+    <p class="section-sub fade-in">Construit specific pentru industria de publicitate și semnalistică. Gândit de la zero pentru ateliere, designeri și echipe de montaj — nu adaptat dintr-o soluție universală.</p>
+    <div class="features-grid">
+      <div class="feat fade-in" style="border-color:var(--grn2)">
+        <div class="feat-ico" style="background:var(--grn2)"><i class="ti ti-target" style="color:var(--grn)"></i></div>
+        <h3>Construit pentru industria ta</h3>
+        <p>Terminologia, fluxul, coloanele — totul reflectă exact cum funcționează o companie de publicitate outdoor și semnalistică. Nu generalist, specific.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-device-tv" style="color:var(--blue)"></i></div>
+        <h3>TV Mode pentru atelier</h3>
+        <p>Un singur click și interfața se mărește pentru ecranele mari din atelier. Muncitorii văd proiectele de la distanță, fără să se apropie de ecran.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-world" style="color:var(--grn)"></i></div>
+        <h3>10 limbi europene</h3>
+        <p>Română, Engleză, Germană, Franceză, Italiană, Spaniolă, Maghiară, Bulgară, Ucraineană, Olandeză. Schimbi limba în 2 secunde din setări.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#3d1e1e"><i class="ti ti-database" style="color:var(--red)"></i></div>
+        <h3>Date în cloud, mereu sigure</h3>
+        <p>Firebase Firestore asigură că nu pierzi niciodată un proiect, o comandă sau un contact. Backup automat, acces de oriunde.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#2a1e3d"><i class="ti ti-pencil" style="color:#b07fe0"></i></div>
+        <h3>Complet personalizabil</h3>
+        <p>Coloanele Kanban, culorile, fonturile, etichetele — totul se poate schimba din interfață. Aplicația se adaptează la tine, nu invers.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a2d1a"><i class="ti ti-bolt" style="color:var(--grn)"></i></div>
+        <h3>Rapid, simplu, eficient</h3>
+        <p>Interfață curată, fără meniuri complicate, fără tutoriale. Un angajat nou înțelege cum funcționează în 5 minute. Zero training necesar.</p>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- MODAL CLIENT -->
-<div class="modal-bg" id="clientModal" onclick="if(event.target===this)closeModal('client')">
-  <div class="modal">
-    <h2><i class="ti ti-user-plus"></i> <span id="clientModalTitle" data-t="newClient">Client Nou</span></h2>
-    <div class="fc2">
-      <div class="fr"><label data-t="companyName">Nume Companie *</label><input type="text" id="cName"></div>
-      <div class="fr"><label data-t="contactPerson">Persoană Contact</label><input type="text" id="cContact"></div>
-    </div>
-    <div class="fc2">
-      <div class="fr"><label>Email</label><input type="email" id="cEmail"></div>
-      <div class="fr"><label data-t="phone">Telefon</label><input type="text" id="cPhone"></div>
-    </div>
-    <div class="fr"><label data-t="address">Adresă</label><input type="text" id="cAddr"></div>
-    <div class="fr"><label data-t="industry">Industrie</label><select id="cIndustry"><option>Retail</option><option>HoReCa</option><option>Auto</option><option>Imobiliare</option><option>Farmacie</option><option>Logistică</option><option>Alt domeniu</option></select></div>
-    <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('client')" data-t="cancel">Anulează</button>
-      <button class="btn-s" onclick="saveClient()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
+<hr class="divider">
+
+<!-- TECH -->
+<section id="tech" style="background:var(--dark)">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-code"></i> Tehnologie</div>
+    <h2 class="fade-in">Construit pe<br><span>fundații solide</span></h2>
+    <p class="section-sub fade-in">Tehnologii moderne, dovedite, care garantează performanță și fiabilitate în producție.</p>
+    <div class="tech-grid fade-in">
+      <div class="tech-pill"><i class="ti ti-brand-firebase"></i> Firebase Firestore</div>
+      <div class="tech-pill"><i class="ti ti-refresh"></i> Real-time sync</div>
+      <div class="tech-pill"><i class="ti ti-device-mobile"></i> PWA instalabil</div>
+      <div class="tech-pill"><i class="ti ti-bell"></i> Push Notifications</div>
+      <div class="tech-pill"><i class="ti ti-shield"></i> Autentificare securizată</div>
+      <div class="tech-pill"><i class="ti ti-world"></i> 10 limbi</div>
+      <div class="tech-pill"><i class="ti ti-palette"></i> UI personalizabil</div>
+      <div class="tech-pill"><i class="ti ti-drag-drop"></i> Drag & Drop</div>
+      <div class="tech-pill"><i class="ti ti-device-tv"></i> TV Mode</div>
+      <div class="tech-pill"><i class="ti ti-cloud"></i> Cloud backup</div>
+      <div class="tech-pill"><i class="ti ti-file-code"></i> Single Page App</div>
+      <div class="tech-pill"><i class="ti ti-device-laptop"></i> Responsive</div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- MODAL ANGAJAT -->
-<div class="modal-bg" id="staffModal" onclick="if(event.target===this)closeModal('staff')">
-  <div class="modal">
-    <h2><i class="ti ti-user-plus"></i> <span id="staffModalTitle" data-t="newEmployee">Angajat Nou</span></h2>
-    <div class="fc2">
-      <div class="fr"><label data-t="firstName">Prenume *</label><input type="text" id="sFirst"></div>
-      <div class="fr"><label data-t="lastName">Nume *</label><input type="text" id="sLast"></div>
-    </div>
-    <div class="fc2">
-      <div class="fr"><label data-t="department">Departament</label><select id="sDept"><option value="">— alege —</option></select></div>
-      <div class="fr"><label data-t="role">Rol / Funcție</label><input type="text" id="sRole"></div>
-    </div>
-    <div class="fc2">
-      <div class="fr"><label>Email</label><input type="email" id="sEmail"></div>
-      <div class="fr"><label data-t="phone">Telefon</label><input type="text" id="sPhone"></div>
-    </div>
-    <div class="fr"><label data-t="loginPassword">Parolă login *</label><input type="password" id="sPass"></div>
-    <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('staff')" data-t="cancel">Anulează</button>
-      <button class="btn-s" onclick="saveStaff()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
+<hr class="divider">
+
+<!-- CTA -->
+<section style="padding:80px 24px">
+  <div class="cta-section fade-in">
+    <div class="hero-badge" style="margin-bottom:20px;justify-content:center"><i class="ti ti-rocket" style="color:var(--grn)"></i> Gata de utilizare</div>
+    <h2>Începe să lucrezi<br><span>organizat de azi</span></h2>
+    <p>Deschide dashboard-ul, adaugă primul proiect și vezi cum arată producția ta când e organizată corect.</p>
+    <div class="hero-btns">
+      <a href="/index.html" class="btn-primary"><i class="ti ti-layout-kanban"></i> Deschide Dashboard</a>
     </div>
   </div>
-</div>
+</section>
 
-<!-- MODAL DEPARTAMENT -->
-<div class="modal-bg" id="deptModal" onclick="if(event.target===this)closeModal('dept')">
-  <div class="modal" style="max-width:400px">
-    <h2><i class="ti ti-layout-columns"></i> <span id="deptModalTitle" data-t="newColumn">Coloană Nouă</span></h2>
-    <div class="fr"><label data-t="name">Denumire *</label><input type="text" id="dTitle"></div>
-    <div class="fc2">
-      <div class="fr"><label data-t="color">Culoare</label><input type="color" id="dColor" value="#5ec97a" style="height:38px;padding:2px 4px;cursor:pointer;"></div>
-      <div class="fr"><label data-t="loginPass">Parolă login dept.</label><input type="text" id="dPassword" placeholder="ex: grafica123"></div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-c" onclick="closeModal('dept')" data-t="cancel">Anulează</button>
-      <button class="btn-s" onclick="saveDept()"><i class="ti ti-check"></i> <span data-t="save">Salvează</span></button>
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="nav-logo-ico" style="width:26px;height:26px;border-radius:6px;font-size:12px;background:var(--grn);display:flex;align-items:center;justify-content:center;font-weight:900;color:#0a0a0a">K</div>
+    <div>
+      <div style="font-size:13px;font-weight:700">Krennic PMS</div>
+      <div style="font-size:10px;color:var(--g4)">Production Management System</div>
     </div>
   </div>
-</div>
+  <div class="footer-copy">© 2025 Krennic PMS. Toate drepturile rezervate.</div>
+  <div class="footer-links">
+    <a href="/index.html">Dashboard</a>
+    <a href="#features">Funcționalități</a>
+    <a href="#flow">Flux</a>
+  </div>
+</footer>
 
-<!-- DETAIL MODAL -->
-<div class="modal-bg" id="detailBg" onclick="if(event.target===this)closeDetail()">
-  <div class="detail-modal" id="detailBox"></div>
-</div>
-
-<div class="toast-wrap" id="toastWrap"></div>
-
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
 <script>
-// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
-const LANGS = {
-  ro:{login:'Intră în sistem',cancel:'Anulează',save:'Salvează',newProject:'Proiect Nou',newClient:'Client Nou',newEmployee:'Angajat Nou',newColumn:'Coloană Nouă',clients:'Clienți',team:'Echipă',projects:'Proiecte',urgent:'Urgente',normal:'Normal',medium:'Mediu',reports:'Rapoarte',calendar:'Calendar',production:'Producție',data:'Date',system:'Sistem',summary:'Sumar Live',uiSettings:'Interfață',colors:'Culori',language:'Limbă',selectLanguage:'Selectează limba',accentColor:'Culoare accent',accentColorHint:'Butoane, progres, highlight',urgentColor:'Culoare Urgent',mediumColor:'Culoare Mediu',typographyShape:'Font & Formă',fontSize:'Mărime font',cardRadius:'Rotunjire carduri',customLabels:'Etichete personalizate',preview:'Previzualizare',saveSettings:'Salvează Setările',reset:'Resetează',notifications:'Notificări',today:'Azi',allUrgencies:'Toate urgențele',allStaff:'Toți responsabilii',activeProjects:'Proiecte Active',stageDistrib:'Distribuție pe Etape',urgencyDistrib:'Distribuție Urgențe',teamProjects:'Echipă & Proiecte',clientsDB:'Baza de Date Clienți',totalClients:'Total Clienți',withProjects:'Cu Proiecte',totalProjects:'Total Proiecte',client:'Client',contact:'Contact',deadline:'Deadline',employees:'Angajați',kanbanCols:'Coloane Kanban',order:'Ordine',name:'Denumire',color:'Culoare',loginPass:'Parolă login',actions:'Acțiuni',adminPassword:'Parolă Admin',newPassword:'Parolă nouă',restrictedAccess:'Acces restricționat',productType:'Tip Produs',responsible:'Responsabil',materials:'Materiale',urgency:'Urgență',notes:'Note',companyName:'Nume Companie',contactPerson:'Persoană Contact',address:'Adresă',industry:'Industrie',firstName:'Prenume',lastName:'Nume',department:'Departament',role:'Rol / Funcție',loginPassword:'Parolă login',phone:'Telefon',password:'Parolă',adminPassHint:'Introduceți parola de Admin.',enter:'Intră',teamSaiko:'Echipa Saiko',activeProjects:'Proiecte Active'},
-  en:{login:'Login',cancel:'Cancel',save:'Save',newProject:'New Project',newClient:'New Client',newEmployee:'New Employee',newColumn:'New Column',clients:'Clients',team:'Team',projects:'Projects',urgent:'Urgent',normal:'Normal',medium:'Medium',reports:'Reports',calendar:'Calendar',production:'Production',data:'Data',system:'System',summary:'Live Summary',uiSettings:'Interface',colors:'Colors',language:'Language',selectLanguage:'Select language',accentColor:'Accent color',accentColorHint:'Buttons, progress, highlight',urgentColor:'Urgent color',mediumColor:'Medium color',typographyShape:'Font & Shape',fontSize:'Font size',cardRadius:'Card radius',customLabels:'Custom labels',preview:'Preview',saveSettings:'Save Settings',reset:'Reset',notifications:'Notifications',today:'Today',allUrgencies:'All urgencies',allStaff:'All staff',activeProjects:'Active Projects',stageDistrib:'Stage Distribution',urgencyDistrib:'Urgency Distribution',teamProjects:'Team & Projects',clientsDB:'Client Database',totalClients:'Total Clients',withProjects:'With Projects',totalProjects:'Total Projects',client:'Client',contact:'Contact',deadline:'Deadline',employees:'Employees',kanbanCols:'Kanban Columns',order:'Order',name:'Name',color:'Color',loginPass:'Login password',actions:'Actions',adminPassword:'Admin Password',newPassword:'New password',restrictedAccess:'Restricted access',productType:'Product Type',responsible:'Responsible',materials:'Materials',urgency:'Urgency',notes:'Notes',companyName:'Company Name',contactPerson:'Contact Person',address:'Address',industry:'Industry',firstName:'First Name',lastName:'Last Name',department:'Department',role:'Role / Function',loginPassword:'Login password',phone:'Phone',password:'Password',adminPassHint:'Enter admin password.',enter:'Enter',teamSaiko:'Saiko Team'},
-  de:{login:'Anmelden',cancel:'Abbrechen',save:'Speichern',newProject:'Neues Projekt',newClient:'Neuer Kunde',newEmployee:'Neuer Mitarbeiter',newColumn:'Neue Spalte',clients:'Kunden',team:'Team',projects:'Projekte',urgent:'Dringend',normal:'Normal',medium:'Mittel',reports:'Berichte',calendar:'Kalender',production:'Produktion',data:'Daten',system:'System',summary:'Live-Übersicht',uiSettings:'Oberfläche',colors:'Farben',language:'Sprache',selectLanguage:'Sprache wählen',accentColor:'Akzentfarbe',accentColorHint:'Schaltflächen, Fortschritt',urgentColor:'Dringend-Farbe',mediumColor:'Mittel-Farbe',typographyShape:'Schrift & Form',fontSize:'Schriftgröße',cardRadius:'Kartenradius',customLabels:'Benutzerdefinierte Labels',preview:'Vorschau',saveSettings:'Einstellungen speichern',reset:'Zurücksetzen',notifications:'Benachrichtigungen',today:'Heute',allUrgencies:'Alle Dringlichkeiten',allStaff:'Alle Mitarbeiter',activeProjects:'Aktive Projekte',stageDistrib:'Stufenverteilung',urgencyDistrib:'Dringlichkeitsverteilung',teamProjects:'Team & Projekte',clientsDB:'Kundendatenbank',totalClients:'Kunden gesamt',withProjects:'Mit Projekten',totalProjects:'Projekte gesamt',client:'Kunde',contact:'Kontakt',deadline:'Frist',employees:'Mitarbeiter',kanbanCols:'Kanban-Spalten',order:'Reihenfolge',name:'Name',color:'Farbe',loginPass:'Login-Passwort',actions:'Aktionen',adminPassword:'Admin-Passwort',newPassword:'Neues Passwort',restrictedAccess:'Eingeschränkter Zugang',productType:'Produkttyp',responsible:'Verantwortlich',materials:'Materialien',urgency:'Dringlichkeit',notes:'Notizen',companyName:'Firmenname',contactPerson:'Ansprechpartner',address:'Adresse',industry:'Branche',firstName:'Vorname',lastName:'Nachname',department:'Abteilung',role:'Rolle / Funktion',loginPassword:'Login-Passwort',phone:'Telefon',password:'Passwort',adminPassHint:'Admin-Passwort eingeben.',enter:'Eintreten',teamSaiko:'Saiko Team'},
-  fr:{login:'Connexion',cancel:'Annuler',save:'Enregistrer',newProject:'Nouveau Projet',newClient:'Nouveau Client',newEmployee:'Nouvel Employé',newColumn:'Nouvelle Colonne',clients:'Clients',team:'Équipe',projects:'Projets',urgent:'Urgent',normal:'Normal',medium:'Moyen',reports:'Rapports',calendar:'Calendrier',production:'Production',data:'Données',system:'Système',summary:'Résumé Live',uiSettings:'Interface',colors:'Couleurs',language:'Langue',selectLanguage:'Choisir la langue',accentColor:"Couleur d'accentuation",accentColorHint:'Boutons, progression',urgentColor:'Couleur Urgent',mediumColor:'Couleur Moyen',typographyShape:'Police & Forme',fontSize:'Taille de police',cardRadius:'Rayon des cartes',customLabels:'Étiquettes personnalisées',preview:'Aperçu',saveSettings:'Enregistrer les paramètres',reset:'Réinitialiser',notifications:'Notifications',today:"Aujourd'hui",allUrgencies:'Toutes les urgences',allStaff:'Tout le personnel',activeProjects:'Projets actifs',stageDistrib:'Distribution par étape',urgencyDistrib:'Distribution urgences',teamProjects:'Équipe & Projets',clientsDB:'Base de données clients',totalClients:'Total clients',withProjects:'Avec projets',totalProjects:'Total projets',client:'Client',contact:'Contact',deadline:'Échéance',employees:'Employés',kanbanCols:'Colonnes Kanban',order:'Ordre',name:'Nom',color:'Couleur',loginPass:'Mot de passe connexion',actions:'Actions',adminPassword:'Mot de passe Admin',newPassword:'Nouveau mot de passe',restrictedAccess:'Accès restreint',productType:'Type de produit',responsible:'Responsable',materials:'Matériaux',urgency:'Urgence',notes:'Notes',companyName:'Nom de société',contactPerson:'Personne de contact',address:'Adresse',industry:'Industrie',firstName:'Prénom',lastName:'Nom',department:'Département',role:'Rôle / Fonction',loginPassword:'Mot de passe connexion',phone:'Téléphone',password:'Mot de passe',adminPassHint:"Entrez le mot de passe admin.",enter:'Entrer',teamSaiko:'Équipe Saiko'},
-  it:{login:'Accedi',cancel:'Annulla',save:'Salva',newProject:'Nuovo Progetto',newClient:'Nuovo Cliente',newEmployee:'Nuovo Dipendente',newColumn:'Nuova Colonna',clients:'Clienti',team:'Squadra',projects:'Progetti',urgent:'Urgente',normal:'Normale',medium:'Medio',reports:'Rapporti',calendar:'Calendario',production:'Produzione',data:'Dati',system:'Sistema',summary:'Riepilogo Live',uiSettings:'Interfaccia',colors:'Colori',language:'Lingua',selectLanguage:'Seleziona lingua',accentColor:'Colore accento',accentColorHint:'Pulsanti, avanzamento',urgentColor:'Colore Urgente',mediumColor:'Colore Medio',typographyShape:'Carattere & Forma',fontSize:'Dimensione carattere',cardRadius:'Raggio schede',customLabels:'Etichette personalizzate',preview:'Anteprima',saveSettings:'Salva impostazioni',reset:'Ripristina',notifications:'Notifiche',today:'Oggi',allUrgencies:'Tutte le urgenze',allStaff:'Tutto il personale',activeProjects:'Progetti attivi',stageDistrib:'Distribuzione per fase',urgencyDistrib:'Distribuzione urgenze',teamProjects:'Squadra & Progetti',clientsDB:'Database clienti',totalClients:'Totale clienti',withProjects:'Con progetti',totalProjects:'Totale progetti',client:'Cliente',contact:'Contatto',deadline:'Scadenza',employees:'Dipendenti',kanbanCols:'Colonne Kanban',order:'Ordine',name:'Nome',color:'Colore',loginPass:'Password accesso',actions:'Azioni',adminPassword:'Password Admin',newPassword:'Nuova password',restrictedAccess:'Accesso limitato',productType:'Tipo prodotto',responsible:'Responsabile',materials:'Materiali',urgency:'Urgenza',notes:'Note',companyName:'Nome azienda',contactPerson:'Persona di contatto',address:'Indirizzo',industry:'Settore',firstName:'Nome',lastName:'Cognome',department:'Reparto',role:'Ruolo / Funzione',loginPassword:'Password accesso',phone:'Telefono',password:'Password',adminPassHint:'Inserire password admin.',enter:'Entra',teamSaiko:'Team Saiko'},
-  es:{login:'Iniciar sesión',cancel:'Cancelar',save:'Guardar',newProject:'Nuevo Proyecto',newClient:'Nuevo Cliente',newEmployee:'Nuevo Empleado',newColumn:'Nueva Columna',clients:'Clientes',team:'Equipo',projects:'Proyectos',urgent:'Urgente',normal:'Normal',medium:'Medio',reports:'Informes',calendar:'Calendario',production:'Producción',data:'Datos',system:'Sistema',summary:'Resumen en vivo',uiSettings:'Interfaz',colors:'Colores',language:'Idioma',selectLanguage:'Seleccionar idioma',accentColor:'Color de acento',accentColorHint:'Botones, progreso',urgentColor:'Color Urgente',mediumColor:'Color Medio',typographyShape:'Fuente & Forma',fontSize:'Tamaño de fuente',cardRadius:'Radio de tarjetas',customLabels:'Etiquetas personalizadas',preview:'Vista previa',saveSettings:'Guardar configuración',reset:'Restablecer',notifications:'Notificaciones',today:'Hoy',allUrgencies:'Todas las urgencias',allStaff:'Todo el personal',activeProjects:'Proyectos activos',stageDistrib:'Distribución por etapa',urgencyDistrib:'Distribución urgencias',teamProjects:'Equipo & Proyectos',clientsDB:'Base de datos clientes',totalClients:'Total clientes',withProjects:'Con proyectos',totalProjects:'Total proyectos',client:'Cliente',contact:'Contacto',deadline:'Fecha límite',employees:'Empleados',kanbanCols:'Columnas Kanban',order:'Orden',name:'Nombre',color:'Color',loginPass:'Contraseña acceso',actions:'Acciones',adminPassword:'Contraseña Admin',newPassword:'Nueva contraseña',restrictedAccess:'Acceso restringido',productType:'Tipo de producto',responsible:'Responsable',materials:'Materiales',urgency:'Urgencia',notes:'Notas',companyName:'Nombre empresa',contactPerson:'Persona de contacto',address:'Dirección',industry:'Industria',firstName:'Nombre',lastName:'Apellido',department:'Departamento',role:'Rol / Función',loginPassword:'Contraseña acceso',phone:'Teléfono',password:'Contraseña',adminPassHint:'Introduzca la contraseña admin.',enter:'Entrar',teamSaiko:'Equipo Saiko'},
-  hu:{login:'Bejelentkezés',cancel:'Mégse',save:'Mentés',newProject:'Új Projekt',newClient:'Új Ügyfél',newEmployee:'Új Alkalmazott',newColumn:'Új Oszlop',clients:'Ügyfelek',team:'Csapat',projects:'Projektek',urgent:'Sürgős',normal:'Normál',medium:'Közepes',reports:'Jelentések',calendar:'Naptár',production:'Gyártás',data:'Adatok',system:'Rendszer',summary:'Élő összefoglaló',uiSettings:'Felület',colors:'Színek',language:'Nyelv',selectLanguage:'Válasszon nyelvet',accentColor:'Kiemelő szín',accentColorHint:'Gombok, folyamat',urgentColor:'Sürgős szín',mediumColor:'Közepes szín',typographyShape:'Betű & Forma',fontSize:'Betűméret',cardRadius:'Kártya lekerekítés',customLabels:'Egyéni feliratok',preview:'Előnézet',saveSettings:'Beállítások mentése',reset:'Visszaállítás',notifications:'Értesítések',today:'Ma',allUrgencies:'Összes sürgősség',allStaff:'Összes felelős',activeProjects:'Aktív projektek',stageDistrib:'Fázis elosztás',urgencyDistrib:'Sürgősség elosztás',teamProjects:'Csapat & Projektek',clientsDB:'Ügyfél adatbázis',totalClients:'Összes ügyfél',withProjects:'Projektekkel',totalProjects:'Összes projekt',client:'Ügyfél',contact:'Kapcsolat',deadline:'Határidő',employees:'Alkalmazottak',kanbanCols:'Kanban oszlopok',order:'Sorrend',name:'Megnevezés',color:'Szín',loginPass:'Bejelentkezési jelszó',actions:'Műveletek',adminPassword:'Admin jelszó',newPassword:'Új jelszó',restrictedAccess:'Korlátozott hozzáférés',productType:'Terméktípus',responsible:'Felelős',materials:'Anyagok',urgency:'Sürgősség',notes:'Megjegyzések',companyName:'Cégnév',contactPerson:'Kapcsolattartó',address:'Cím',industry:'Iparág',firstName:'Keresztnév',lastName:'Vezetéknév',department:'Részleg',role:'Szerepkör',loginPassword:'Bejelentkezési jelszó',phone:'Telefon',password:'Jelszó',adminPassHint:'Adja meg az admin jelszót.',enter:'Belépés',teamSaiko:'Saiko Csapat'},
-  bg:{login:'Вход',cancel:'Отказ',save:'Запази',newProject:'Нов проект',newClient:'Нов клиент',newEmployee:'Нов служител',newColumn:'Нова колона',clients:'Клиенти',team:'Екип',projects:'Проекти',urgent:'Спешно',normal:'Нормално',medium:'Средно',reports:'Отчети',calendar:'Календар',production:'Производство',data:'Данни',system:'Система',summary:'Обобщение',uiSettings:'Интерфейс',colors:'Цветове',language:'Език',selectLanguage:'Изберете език',accentColor:'Акцентен цвят',accentColorHint:'Бутони, прогрес',urgentColor:'Цвят Спешно',mediumColor:'Цвят Средно',typographyShape:'Шрифт & Форма',fontSize:'Размер шрифт',cardRadius:'Закръгляне карти',customLabels:'Персонализирани етикети',preview:'Преглед',saveSettings:'Запази настройките',reset:'Нулиране',notifications:'Известия',today:'Днес',allUrgencies:'Всички спешности',allStaff:'Всички отговорни',activeProjects:'Активни проекти',stageDistrib:'Разпределение по етапи',urgencyDistrib:'Разпределение спешност',teamProjects:'Екип & Проекти',clientsDB:'База данни клиенти',totalClients:'Общо клиенти',withProjects:'С проекти',totalProjects:'Общо проекти',client:'Клиент',contact:'Контакт',deadline:'Краен срок',employees:'Служители',kanbanCols:'Канбан колони',order:'Ред',name:'Наименование',color:'Цвят',loginPass:'Парола за вход',actions:'Действия',adminPassword:'Парола Admin',newPassword:'Нова парола',restrictedAccess:'Ограничен достъп',productType:'Тип продукт',responsible:'Отговорник',materials:'Материали',urgency:'Спешност',notes:'Бележки',companyName:'Фирма',contactPerson:'Лице за контакт',address:'Адрес',industry:'Индустрия',firstName:'Собствено',lastName:'Фамилия',department:'Отдел',role:'Роля',loginPassword:'Парола за вход',phone:'Телефон',password:'Парола',adminPassHint:'Въведете парола за администратор.',enter:'Влез',teamSaiko:'Екип Saiko'},
-  uk:{login:'Увійти',cancel:'Скасувати',save:'Зберегти',newProject:'Новий проект',newClient:'Новий клієнт',newEmployee:'Новий співробітник',newColumn:'Новий стовпець',clients:'Клієнти',team:'Команда',projects:'Проекти',urgent:'Терміново',normal:'Нормально',medium:'Середньо',reports:'Звіти',calendar:'Календар',production:'Виробництво',data:'Дані',system:'Система',summary:'Зведення',uiSettings:'Інтерфейс',colors:'Кольори',language:'Мова',selectLanguage:'Виберіть мову',accentColor:'Акцентний колір',accentColorHint:'Кнопки, прогрес',urgentColor:'Колір Термінового',mediumColor:'Колір Середнього',typographyShape:'Шрифт і форма',fontSize:'Розмір шрифту',cardRadius:'Заокруглення карток',customLabels:'Власні мітки',preview:'Попередній перегляд',saveSettings:'Зберегти налаштування',reset:'Скинути',notifications:'Сповіщення',today:'Сьогодні',allUrgencies:'Всі терміновості',allStaff:'Всі відповідальні',activeProjects:'Активні проекти',stageDistrib:'Розподіл за етапами',urgencyDistrib:'Розподіл терміновості',teamProjects:'Команда & Проекти',clientsDB:'База даних клієнтів',totalClients:'Всього клієнтів',withProjects:'З проектами',totalProjects:'Всього проектів',client:'Клієнт',contact:'Контакт',deadline:'Дедлайн',employees:'Співробітники',kanbanCols:'Стовпці Kanban',order:'Порядок',name:'Назва',color:'Колір',loginPass:'Пароль входу',actions:'Дії',adminPassword:'Пароль адміна',newPassword:'Новий пароль',restrictedAccess:'Обмежений доступ',productType:'Тип продукту',responsible:'Відповідальний',materials:'Матеріали',urgency:'Терміновість',notes:'Нотатки',companyName:'Назва компанії',contactPerson:'Контактна особа',address:'Адреса',industry:'Галузь',firstName:"Ім'я",lastName:'Прізвище',department:'Відділ',role:'Роль / Функція',loginPassword:'Пароль входу',phone:'Телефон',password:'Пароль',adminPassHint:'Введіть пароль адміністратора.',enter:'Увійти',teamSaiko:'Команда Saiko'},
-  nl:{login:'Inloggen',cancel:'Annuleren',save:'Opslaan',newProject:'Nieuw Project',newClient:'Nieuwe Klant',newEmployee:'Nieuwe Medewerker',newColumn:'Nieuwe Kolom',clients:'Klanten',team:'Team',projects:'Projecten',urgent:'Dringend',normal:'Normaal',medium:'Gemiddeld',reports:'Rapporten',calendar:'Kalender',production:'Productie',data:'Gegevens',system:'Systeem',summary:'Live Samenvatting',uiSettings:'Interface',colors:'Kleuren',language:'Taal',selectLanguage:'Kies taal',accentColor:'Accentkleur',accentColorHint:'Knoppen, voortgang',urgentColor:'Dringend kleur',mediumColor:'Gemiddeld kleur',typographyShape:'Lettertype & Vorm',fontSize:'Lettergrootte',cardRadius:'Kaartafronding',customLabels:'Aangepaste labels',preview:'Voorbeeld',saveSettings:'Instellingen opslaan',reset:'Resetten',notifications:'Meldingen',today:'Vandaag',allUrgencies:'Alle urgentieniveaus',allStaff:'Al het personeel',activeProjects:'Actieve projecten',stageDistrib:'Verdeling per fase',urgencyDistrib:'Urgentieverdeling',teamProjects:'Team & Projecten',clientsDB:'Klantendatabase',totalClients:'Totaal klanten',withProjects:'Met projecten',totalProjects:'Totaal projecten',client:'Klant',contact:'Contact',deadline:'Deadline',employees:'Medewerkers',kanbanCols:'Kanban kolommen',order:'Volgorde',name:'Naam',color:'Kleur',loginPass:'Inlogwachtwoord',actions:'Acties',adminPassword:'Admin wachtwoord',newPassword:'Nieuw wachtwoord',restrictedAccess:'Beperkte toegang',productType:'Producttype',responsible:'Verantwoordelijke',materials:'Materialen',urgency:'Urgentie',notes:'Notities',companyName:'Bedrijfsnaam',contactPerson:'Contactpersoon',address:'Adres',industry:'Industrie',firstName:'Voornaam',lastName:'Achternaam',department:'Afdeling',role:'Rol / Functie',loginPassword:'Inlogwachtwoord',phone:'Telefoon',password:'Wachtwoord',adminPassHint:'Voer het adminwachtwoord in.',enter:'Inloggen',teamSaiko:'Saiko Team'},
-};
-
-// Labels that can be customized by the user
-const DEFAULT_LABELS = ['clients','team','projects','urgent','reports','calendar','newProject','deadline','responsible','urgency'];
-
-let _lang = 'ro';
-
-function t(key){ return (LANGS[_lang]||LANGS.ro)[key] || (LANGS.ro)[key] || key; }
-
-function applyTranslations(){
-  document.querySelectorAll('[data-t]').forEach(el=>{
-    const key=el.getAttribute('data-t');
-    const custom=window._ui?.labels?.[key];
-    el.textContent = custom || t(key);
-  });
-}
-
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-function initials(f,l){ return (((f||'')[0]||'')+((l||'')[0]||'')).toUpperCase()||'?'; }
-function staffFullName(s){ return ((s.firstName||'')+' '+(s.lastName||'')).trim(); }
-function deptColor(id){ return (window._departments||[]).find(d=>d.id===id)?.color||'#888'; }
-function deptTitle(id){ return (window._departments||[]).find(d=>d.id===id)?.title||id; }
-
-let _cu=null,_tvMode=false,_editIds={};
-let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
-const ADMIN={_id:'__admin__',firstName:'Admin',lastName:'',role:'Admin',department:null,password:'saiko2025'};
-
-// ── BOOT ──────────────────────────────────────────────────────────────────────
-window.addEventListener('firebase-ready',()=>{
-  $('loader').style.display='none';
-  $('authScreen').classList.add('open');
-  buildLabelsGrid();
-});
-
-// ── APPLY UI SETTINGS ─────────────────────────────────────────────────────────
-window.applyUI = function(){
-  const ui=window._ui||{};
-  // Language
-  if(ui.lang){ _lang=ui.lang; $('uiLang').value=ui.lang; }
-  // Colors
-  const grn=ui.accent||'#5ec97a';
-  const red=ui.red||'#e05252';
-  const amb=ui.amber||'#e09a34';
-  document.documentElement.style.setProperty('--grn',grn);
-  document.documentElement.style.setProperty('--grn2',grn+'29');
-  document.documentElement.style.setProperty('--red',red);
-  document.documentElement.style.setProperty('--amber',amb);
-  $('uiAccent').value=grn; $('uiAccentVal').textContent=grn;
-  $('uiRed').value=red;    $('uiRedVal').textContent=red;
-  $('uiAmber').value=amb;  $('uiAmberVal').textContent=amb;
-  // Font
-  const fs=ui.fontSize||13;
-  document.documentElement.style.setProperty('--base-font',fs+'px');
-  $('uiFontSize').value=fs; $('fontSizeVal').textContent=fs+'px';
-  // Card radius
-  const cr=ui.cardRad||6;
-  document.documentElement.style.setProperty('--card-rad',cr+'px');
-  $('uiCardRad').value=cr; $('cardRadVal').textContent=cr+'px';
-  // Preview
-  updatePreview(grn,cr);
-  // Labels
-  if(ui.labels) fillLabelsGrid(ui.labels);
-  // Translations
-  applyTranslations();
-};
-
-function previewUI(){
-  const grn=$('uiAccent').value;
-  const red=$('uiRed').value;
-  const amb=$('uiAmber').value;
-  const fs=parseInt($('uiFontSize').value);
-  const cr=$('uiCardRad').value;
-  document.documentElement.style.setProperty('--grn',grn);
-  document.documentElement.style.setProperty('--grn2',grn+'29');
-  document.documentElement.style.setProperty('--red',red);
-  document.documentElement.style.setProperty('--amber',amb);
-  document.documentElement.style.setProperty('--base-font',fs+'px');
-  document.body.style.fontSize = fs+'px';
-  document.documentElement.style.setProperty('--card-rad',cr+'px');
-  $('uiAccentVal').textContent=grn;
-  $('uiRedVal').textContent=red;
-  $('uiAmberVal').textContent=amb;
-  $('fontSizeVal').textContent=fs+'px';
-  $('cardRadVal').textContent=cr+'px';
-  updatePreview(grn,parseInt(cr));
-}
-
-function updatePreview(grn,cr){
-  const pc=$('previewCard'); if(!pc) return;
-  pc.style.borderRadius=cr+'px';
-  const tag=$('previewTag'); if(tag){ tag.style.background=grn+'29'; tag.style.color=grn; }
-}
-
-function onLangChange(){
-  _lang=$('uiLang').value;
-  applyTranslations();
-}
-
-function buildLabelsGrid(){
-  const grid=$('labelsGrid'); if(!grid) return;
-  grid.innerHTML=DEFAULT_LABELS.map(key=>`
-    <div class="lbl-item">
-      <label>${(LANGS.ro)[key]||key}</label>
-      <input type="text" id="lbl_${key}" placeholder="${(LANGS[_lang]||LANGS.ro)[key]||key}">
-    </div>`).join('');
-}
-function fillLabelsGrid(labels){
-  DEFAULT_LABELS.forEach(key=>{
-    const inp=$('lbl_'+key); if(inp&&labels[key]) inp.value=labels[key];
-  });
-}
-
-async function saveUI(){
-  const labels={};
-  DEFAULT_LABELS.forEach(key=>{ const v=($('lbl_'+key)?.value||'').trim(); if(v) labels[key]=v; });
-  const data={
-    lang:$('uiLang').value,
-    accent:$('uiAccent').value,
-    red:$('uiRed').value,
-    amber:$('uiAmber').value,
-    fontSize:parseInt($('uiFontSize').value),
-    cardRad:parseInt($('uiCardRad').value),
-    labels
-  };
-  await window._db.setSetting('ui',data);
-  toast('success','ti-check',t('saveSettings'));
-  applyTranslations();
-}
-
-function resetUI(){
-  window._ui={};
-  applyUI();
-  toast('info','ti-refresh',t('reset'));
-}
-
-// ── LOGIN DROPDOWN ────────────────────────────────────────────────────────────
-window.rebuildLoginDropdown=function(){
-  const lu=$('loginUser'); if(!lu) return;
-  const prev=lu.value;
-  lu.innerHTML='<option value="">— alege —</option>';
-  const ao=document.createElement('option');
-  ao.value='__admin__'; ao.textContent='👑 Admin';
-  lu.appendChild(ao);
-  (window._departments||[]).forEach(d=>{
-    const o=document.createElement('option');
-    o.value='dept__'+d.id; o.textContent=d.title;
-    lu.appendChild(o);
-  });
-  if(prev) lu.value=prev;
-};
-
-window.rebuildAssignSelects=function(){
-  const staff=window._staff||[];
-  const af=$('assignFilter');
-  if(af){ const pv=af.value; af.innerHTML=`<option value="">${t('allStaff')}</option>`; staff.forEach(s=>{const o=document.createElement('option');o.value=staffFullName(s);o.textContent=staffFullName(s);af.appendChild(o);}); if(pv)af.value=pv; }
-  const nr=$('nResp');
-  if(nr){ const pv=nr.value; nr.innerHTML=`<option value="">— —</option>`; staff.forEach(s=>{const o=document.createElement('option');o.value=staffFullName(s);o.textContent=staffFullName(s)+' ('+deptTitle(s.department)+')';nr.appendChild(o);}); if(pv)nr.value=pv; }
-  const ss=$('sb-staff'); if(ss)ss.textContent=staff.length;
-};
-
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-function doLogin(){
-  const uid=$('loginUser').value, pass=$('loginPass').value;
-  if(!uid||!pass){$('authErr').style.display='block';return;}
-  let user=null;
-  if(uid==='__admin__'){
-    if(pass!==window._adminPass){$('authErr').style.display='block';return;}
-    user={...ADMIN,password:window._adminPass};
-  } else if(uid.startsWith('dept__')){
-    const deptId=uid.replace('dept__','');
-    const dept=(window._departments||[]).find(d=>d.id===deptId);
-    if(!dept||pass!==(dept.password||'')){$('authErr').style.display='block';return;}
-    user={_id:uid,firstName:dept.title,lastName:'',role:dept.title,department:deptId};
-  }
-  if(!user){$('authErr').style.display='block';return;}
-  _cu=user; window._currentUser=user;
-  $('authScreen').classList.remove('open');
-  $('authErr').style.display='none';
-  $('loginPass').value='';
-  const ini=initials(user.firstName,user.lastName);
-  $('userAvatar').textContent=ini; $('sbAvatar').textContent=ini;
-  $('sbName').textContent=user.firstName; $('sbRole').textContent=user.role||'—';
-  $('notifDot').style.display='block';
-  window._appReady=true;
-  renderBoard(); renderNotifs();
-  toast('success','ti-check',t('login')+': '+user.firstName);
-}
-
-// ── ADMIN PANEL ───────────────────────────────────────────────────────────────
-function openAdminPanel(){$('adminPassInp').value='';$('adminPassScreen').classList.add('open');}
-function checkAdminPass(){
-  if($('adminPassInp').value===window._adminPass){$('adminPassScreen').classList.remove('open');switchView('admin');}
-  else{$('adminPassInp').style.borderColor='var(--red)';setTimeout(()=>$('adminPassInp').style.borderColor='',1000);toast('error','ti-lock','Parolă incorectă.');}
-}
-async function changeAdminPass(){
-  const p=$('newAdminPass').value.trim();
-  if(p.length<6){toast('warning','ti-alert-circle','Min. 6 caractere.');return;}
-  await window._db.setSetting('admin',{password:p});
-  $('newAdminPass').value='';
-  toast('success','ti-key',t('adminPassword'));
-}
-
-// ── STAFF TABLE ───────────────────────────────────────────────────────────────
-window.renderStaffTable=function(){
-  const t2=$('staffTable'); if(!t2) return;
-  const staff=window._staff||[];
-  if(!staff.length){t2.innerHTML=`<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">${t('newEmployee')}...</div>`;return;}
-  t2.innerHTML=staff.map(s=>{
-    const dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);
-    return `<div class="tbl-row staff-cols">
-      <div style="display:flex;align-items:center;gap:8px"><div class="aa" style="width:26px;height:26px;font-size:10px;background:${dc}22;color:${dc}">${ini}</div><span style="font-size:12px;font-weight:600">${s.firstName||''}</span></div>
-      <div style="font-size:12px">${s.lastName||''}</div>
-      <div><span style="background:${dc}22;color:${dc};font-size:10.5px;padding:2px 8px;border-radius:8px">${deptTitle(s.department)}</span></div>
-      <div style="font-size:11px;color:var(--g4)">${s.email||'—'}</div>
-      <div style="font-size:11px;color:var(--g4)">${s.phone||'—'}</div>
-      <div style="display:flex;gap:5px">
-        <button onclick="editStaff('${s._id}')" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-pencil" style="font-size:13px"></i></button>
-        <button onclick="deleteStaff('${s._id}')" style="background:#3d1e1e;border:none;border-radius:4px;color:var(--red);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-trash" style="font-size:13px"></i></button>
-      </div>
-    </div>`;
-  }).join('');
-};
-window.renderStaffCards=function(){
-  const c=$('staffCards'); if(!c) return;
-  const staff=window._staff||[];
-  if(!staff.length){c.innerHTML=`<div style="color:var(--g3);font-size:12px">${t('newEmployee')}...</div>`;return;}
-  c.innerHTML=staff.map(s=>{
-    const dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);
-    return `<div style="background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="aa" style="width:38px;height:38px;font-size:14px;background:${dc}22;color:${dc}">${ini}</div><div><div style="font-size:13px;font-weight:600">${staffFullName(s)}</div><div style="font-size:11px;color:var(--g4)">${s.role||''}</div></div></div>
-      <div style="font-size:11px;color:var(--g4);margin-bottom:4px"><i class="ti ti-building" style="font-size:12px;margin-right:3px"></i>${deptTitle(s.department)}</div>
-      ${s.email?`<div style="font-size:11px;color:var(--g4)"><i class="ti ti-mail" style="font-size:12px;margin-right:3px"></i>${s.email}</div>`:''}
-      ${s.phone?`<div style="font-size:11px;color:var(--g4);margin-top:3px"><i class="ti ti-phone" style="font-size:12px;margin-right:3px"></i>${s.phone}</div>`:''}
-    </div>`;
-  }).join('');
-};
-function editStaff(id){
-  const s=(window._staff||[]).find(x=>x._id===id); if(!s) return;
-  _editIds.staff=id; $('staffModalTitle').textContent=t('newEmployee');
-  $('sFirst').value=s.firstName||''; $('sLast').value=s.lastName||'';
-  $('sRole').value=s.role||''; $('sEmail').value=s.email||'';
-  $('sPhone').value=s.phone||''; $('sPass').value='';
-  openModal('staff'); setTimeout(()=>{$('sDept').value=s.department||'';},60);
-}
-async function saveStaff(){
-  const first=$('sFirst').value.trim(),last=$('sLast').value.trim();
-  if(!first||!last){toast('warning','ti-alert-circle',t('firstName')+' & '+t('lastName'));return;}
-  const pass=$('sPass').value;
-  const data={firstName:first,lastName:last,department:$('sDept').value,role:$('sRole').value,email:$('sEmail').value,phone:$('sPhone').value};
-  if(pass)data.password=pass;
-  try{
-    if(_editIds.staff){await window._db.updateStaff(_editIds.staff,data);}
-    else{if(!pass){toast('warning','ti-alert-circle',t('loginPassword'));return;}await window._db.addStaff(data);}
-    closeModal('staff');_editIds.staff=null;toast('success','ti-user-check',t('save'));
-  }catch(e){toast('error','ti-alert-circle',e.message);}
-}
-async function deleteStaff(id){if(!confirm('?'))return;await window._db.deleteStaff(id);}
-
-// ── DEPT TABLE ────────────────────────────────────────────────────────────────
-window.renderDeptTable=function(){
-  const el=$('deptTable'); if(!el) return;
-  const depts=window._departments||[];
-  if(!depts.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--g3);font-size:12px">${t('newColumn')}...</div>`;return;}
-  el.innerHTML=depts.map((d,i)=>`
-    <div class="tbl-row dept-cols">
-      <div style="display:flex;align-items:center;gap:4px">
-        <button onclick="moveDept(${i},-1)" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;"${i===0?' disabled':''}>↑</button>
-        <button onclick="moveDept(${i},1)"  style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:22px;height:22px;cursor:pointer;"${i===depts.length-1?' disabled':''}>↓</button>
-      </div>
-      <div style="font-size:12.5px;font-weight:600">${d.title}</div>
-      <div><span class="color-swatch" style="background:${d.color}"></span></div>
-      <div style="font-size:11px;color:var(--g4)">${d.password||'—'}</div>
-      <div style="display:flex;gap:5px">
-        <button onclick="editDept(${i})" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-pencil" style="font-size:13px"></i></button>
-        <button onclick="deleteDept(${i})" style="background:#3d1e1e;border:none;border-radius:4px;color:var(--red);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-trash" style="font-size:13px"></i></button>
-      </div>
-    </div>`).join('');
-};
-function editDept(i){
-  const d=window._departments[i]; if(!d) return;
-  _editIds.dept=i; $('deptModalTitle').textContent=t('newColumn');
-  $('dTitle').value=d.title; $('dColor').value=d.color; $('dPassword').value=d.password||'';
-  openModal('dept');
-}
-async function saveDept(){
-  const title=$('dTitle').value.trim(); if(!title) return;
-  const depts=[...(window._departments||[])];
-  const entry={
-    id:(_editIds.dept!=null?depts[_editIds.dept].id:title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')),
-    title,color:$('dColor').value,password:$('dPassword').value.trim(),trigger:null
-  };
-  if(_editIds.dept!=null) depts[_editIds.dept]={...depts[_editIds.dept],...entry};
-  else depts.push(entry);
-  await window._db.setSetting('departments',{list:depts});
-  closeModal('dept');_editIds.dept=null;toast('success','ti-layout-columns',t('save'));
-}
-async function deleteDept(i){if(!confirm('?'))return;const d=[...(window._departments||[])];d.splice(i,1);await window._db.setSetting('departments',{list:d});}
-async function moveDept(i,dir){const d=[...(window._departments||[])];const j=i+dir;if(j<0||j>=d.length)return;[d[i],d[j]]=[d[j],d[i]];await window._db.setSetting('departments',{list:d});}
-
-// ── VIEWS ─────────────────────────────────────────────────────────────────────
-function switchView(v){
-  window._currentView=v;
-  ['kanban','reports','calendar','clients','staff','settings','admin'].forEach(id=>{
-    const el=$(id+'View'); if(!el) return;
-    el.style.display=(id===v)?(id==='kanban'?'flex':'flex'):'none';
-    if(id!=='kanban') el.style.flexDirection='column';
-  });
-  $('boardToolbar').style.display=v==='kanban'?'flex':'none';
-  ['kanban','reports','calendar','clients','staff','settings','admin'].forEach(id=>$('nav-'+id)?.classList.toggle('active',id===v));
-  $('vt-kanban').classList.toggle('active',v==='kanban');
-  $('vt-reports').classList.toggle('active',v==='reports');
-  if(v==='calendar') renderCalendar();
-  if(v==='clients')  renderClients();
-  if(v==='reports')  renderReports();
-  if(v==='staff')    renderStaffCards();
-  if(v==='admin')    {renderStaffTable();renderDeptTable();}
-  if(v==='settings') applyUI();
-}
-
-// ── KANBAN ────────────────────────────────────────────────────────────────────
-window.renderBoard=function(){
-  const board=$('kanbanView'); board.innerHTML='';
-  (window._departments||[]).forEach(c=>{
-    const col=document.createElement('div'); col.className='col';
-    col.innerHTML=`<div class="col-hdr"><div class="col-dot" style="background:${c.color}"></div><div class="col-title">${c.title}</div><div class="col-cnt" id="cnt-${c.id}">0</div></div>`;
-    const body=document.createElement('div'); body.className='col-body drop-zone'; body.dataset.col=c.id;
-    body.addEventListener('dragover',e=>{e.preventDefault();body.classList.add('drag-over');});
-    body.addEventListener('dragleave',()=>body.classList.remove('drag-over'));
-    body.addEventListener('drop',e=>onDrop(e,c.id));
-    col.appendChild(body); board.appendChild(col);
-  });
-  filterCards();
-};
-window.filterCards=function(){
-  if(!window._appReady) return;
-  const q=($('searchInp')?.value||'').toLowerCase();
-  const uf=$('urgFilter')?.value||'', af=$('assignFilter')?.value||'';
-  document.querySelectorAll('.col-body').forEach(b=>b.innerHTML='');
-  let vis=0;
-  (window._projects||[]).forEach(p=>{
-    if(uf&&p.urg!==uf) return;
-    if(af&&p.resp!==af) return;
-    if(q&&!p.client?.toLowerCase().includes(q)&&!p.type?.toLowerCase().includes(q)) return;
-    const body=document.querySelector(`.col-body[data-col="${p.col}"]`);
-    if(body){body.appendChild(makeCard(p));vis++;}
-  });
-  const fs=$('filterStatus'); if(fs) fs.textContent=vis+' '+t('projects');
-  updateCounts();
-};
-function makeCard(p){
-  const s=(window._staff||[]).find(x=>staffFullName(x)===p.resp);
-  const dc=s?deptColor(s.department):'#888';
-  const ini=s?initials(s.firstName,s.lastName):(p.resp||'?').substring(0,2).toUpperCase();
-  const card=document.createElement('div'); card.className='card'; card.draggable=true; card.dataset.id=p._id;
-  card.innerHTML=`
-    <div class="ct"><div><div class="cc">${p.client||''}</div><div class="cty">${p.type||''}</div></div><div class="urg ${p.urg||'l'}"></div></div>
-    <div class="cdl ${p.urg||'l'}"><i class="ti ti-clock" style="font-size:10px"></i> ${p.deadline||'—'}</div>
-    <div class="ctags">${(p.tags||[]).map(tg=>`<span class="tag">${tg}</span>`).join('')}${(p.tagsA||[]).map(tg=>`<span class="tag a">${tg}</span>`).join('')}</div>
-    <div class="cf">
-      <div style="display:flex;align-items:center;gap:4px"><div class="aa" style="width:19px;height:19px;font-size:8px;background:${dc}22;color:${dc}">${ini}</div><span style="font-size:10px;color:var(--g4)">${p.resp||'—'}</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><div class="pb" style="width:44px"><div class="pf" style="width:${p.prog||0}%"></div></div><span style="font-size:9.5px;color:var(--g3)">${p.prog||0}%</span></div>
-    </div>`;
-  card.addEventListener('dragstart',e=>{card.classList.add('dragging');e.dataTransfer.setData('text/plain',p._id);});
-  card.addEventListener('dragend',()=>{card.classList.remove('dragging');document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));});
-  card.addEventListener('click',()=>openDetail(p._id));
-  return card;
-}
-function onDrop(e,colId){
-  e.preventDefault();
-  document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over'));
-  const id=e.dataTransfer.getData('text/plain');
-  const p=(window._projects||[]).find(x=>x._id===id);
-  if(!p||p.col===colId) return;
-  const user=window._currentUser, cols=window._departments||[];
-  if(user&&user.department){
-    const fi=cols.findIndex(c=>c.id===p.col), ti=cols.findIndex(c=>c.id===colId), ui=cols.findIndex(c=>c.id===user.department);
-    if(fi!==ui){toast('warning','ti-lock',t('urgent'));return;}
-    if(ti!==fi+1){toast('warning','ti-lock',t('deadline'));return;}
-  }
-  window._db.updateProject(id,{col:colId}).then(()=>triggerNotif({...p,col:colId}));
-}
-function updateCounts(){
-  const ps=window._projects||[];
-  (window._departments||[]).forEach(c=>{const el=$('cnt-'+c.id);if(el)el.textContent=ps.filter(p=>p.col===c.id).length;});
-  const sc=$('sb-cnt');if(sc)sc.textContent=ps.length;
-  const sa=$('sb-active');if(sa)sa.textContent=ps.length;
-  const su=$('sb-urg');if(su)su.textContent=ps.filter(p=>p.urg==='h').length;
-}
-
-// ── DETAIL ────────────────────────────────────────────────────────────────────
-function openDetail(id){
-  const p=(window._projects||[]).find(x=>x._id===id); if(!p) return;
-  const cols=window._departments||[];
-  const colName=cols.find(c=>c.id===p.col)?.title||'';
-  const nextCol=cols[cols.findIndex(c=>c.id===p.col)+1];
-  const tasks=(p.tasks||[]).map((tk,i)=>`
-    <div class="task-row">
-      <div class="tck ${tk.d?'done':''}" onclick="toggleTask('${id}',${i})"><i class="ti ti-check" style="font-size:10px;${tk.d?'':'display:none'}"></i></div>
-      <span style="flex:1;font-size:12px;${tk.d?'text-decoration:line-through;color:var(--g3)':''}">${tk.t}</span>
-    </div>`).join('');
-  $('detailBox').innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
-      <div><div style="font-size:16px;font-weight:700">${p.client}</div><div style="font-size:12px;color:var(--g4);margin-top:3px">${p.type}</div></div>
-      <button onclick="closeDetail()" style="background:none;border:none;color:var(--g4);cursor:pointer;font-size:18px;"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="dg">
-      <div class="df"><div class="dfl">${t('production')}</div><div class="dfv">${colName}</div></div>
-      <div class="df"><div class="dfl">${t('deadline')}</div><div class="dfv">${p.deadline||'—'}</div></div>
-      <div class="df"><div class="dfl">${t('responsible')}</div><div class="dfv">${p.resp||'—'}</div></div>
-      <div class="df"><div class="dfl">${t('urgency')}</div><div class="dfv">${p.urg==='h'?'🔴 '+t('urgent'):p.urg==='m'?'🟡 '+t('medium'):'🟢 '+t('normal')}</div></div>
-      <div class="df" style="grid-column:span 2"><div class="dfl">${t('notes')}</div><div class="dfv">${p.notes||'—'}</div></div>
-    </div>
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--g4);margin-bottom:4px"><span>${t('projects')}</span><span>${p.prog||0}%</span></div>
-      <div class="prog-big"><div class="prog-big-fill" style="width:${p.prog||0}%"></div></div>
-    </div>
-    <div><div style="font-size:11px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tasks</div>${tasks||'<div style="color:var(--g3);font-size:12px;padding:8px 0">—</div>'}</div>
-    ${nextCol?`<button class="move-btn" onclick="moveToNext('${id}')"><i class="ti ti-arrow-right"></i> → „${nextCol.title}"</button>`:'<div style="margin-top:14px;text-align:center;font-size:12px;color:var(--grn)">✓ Done</div>'}`;
-  $('detailBg').classList.add('open');
-}
-function closeDetail(){$('detailBg').classList.remove('open');}
-function toggleTask(pid,ti){
-  const p=(window._projects||[]).find(x=>x._id===pid); if(!p) return;
-  const tasks=[...(p.tasks||[])]; tasks[ti]={...tasks[ti],d:!tasks[ti].d};
-  const prog=Math.round(tasks.filter(tk=>tk.d).length/tasks.length*100);
-  window._db.updateProject(pid,{tasks,prog}).then(()=>setTimeout(()=>openDetail(pid),300));
-}
-function moveToNext(id){
-  const p=(window._projects||[]).find(x=>x._id===id); if(!p) return;
-  const cols=window._departments||[];
-  const idx=cols.findIndex(c=>c.id===p.col);
-  if(idx<cols.length-1){const nc=cols[idx+1].id;window._db.updateProject(id,{col:nc}).then(()=>{triggerNotif({...p,col:nc});closeDetail();});}
-}
-
-// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
-function triggerNotif(p){
-  const col=(window._departments||[]).find(c=>c.id===p.col); if(!col) return;
-  window._db.addNotif({ico:'ti-bell',icoCol:'#1e3d29',icoTxt:'#5ec97a',title:p.client+' → '+col.title,msg:p.type||'',time:new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})});
-  toast('info','ti-bell',p.client+' → '+col.title);
-}
-window.renderNotifs=function(){
-  const ns=window._notifs||[]; const list=$('notifList'); if(!list) return;
-  list.innerHTML=ns.length?ns.map(n=>`<div class="ni"><div class="ni-ico" style="background:${n.icoCol||'#1e3d29'};color:${n.icoTxt||'#5ec97a'}"><i class="ti ${n.ico||'ti-bell'}"></i></div><div class="ni-txt"><strong>${n.title||''}</strong>${n.msg||''}<div class="ni-time">${n.time||''}</div></div></div>`).join(''):`<div style="padding:16px;text-align:center;color:var(--g3);font-size:12px">${t('notifications')}</div>`;
-  const cnt=$('notifCount');if(cnt)cnt.textContent=ns.length;
-  const dot=$('notifDot');if(dot)dot.style.display=ns.length?'block':'none';
-};
-function toggleNotif(){$('notifPanel').classList.toggle('open');}
-document.addEventListener('click',e=>{const p=$('notifPanel');if(!p?.contains(e.target)&&!e.target.closest('.icon-btn'))p?.classList.remove('open');});
-
-// ── MODALS ────────────────────────────────────────────────────────────────────
-function openModal(type){
-  if(type==='staff'){
-    const sd=$('sDept'); if(sd){sd.innerHTML=`<option value="">— —</option>`;(window._departments||[]).forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.title;sd.appendChild(o);});}
-  }
-  $(type+'Modal').classList.add('open');
-}
-function closeModal(type){$(type+'Modal').classList.remove('open');if(type==='staff')_editIds.staff=null;if(type==='dept')_editIds.dept=null;if(type==='client')_editIds.client=null;}
-
-async function saveProject(){
-  const client=$('nClient').value.trim(); if(!client){$('nClient').focus();return;}
-  const mat=$('nMat').value;
-  const data={col:(window._departments||[])[0]?.id||'comenzi',client,type:$('nType').value,deadline:$('nDate').value,urg:$('nUrg').value,resp:$('nResp').value,tags:mat?mat.split(',').map(s=>s.trim()).filter(Boolean).slice(0,3):['Nou'],tagsA:[],prog:0,notes:$('nNotes').value,tasks:[{t:'Brief',d:false},{t:'Contract',d:false}]};
-  try{await window._db.addProject(data);closeModal('project');toast('success','ti-circle-check',t('newProject')+': '+client);['nClient','nDate','nNotes','nMat'].forEach(id=>$(id).value='');}
-  catch(e){toast('error','ti-alert-circle',e.message);}
-}
-
-// ── CLIENTS ───────────────────────────────────────────────────────────────────
-window.renderClients=function(){
-  const q=($('clientSearch')?.value||'').toLowerCase();
-  const cs=window._clients||[],ps=window._projects||[];
-  const fl=cs.filter(c=>c.name?.toLowerCase().includes(q)||c.contact?.toLowerCase().includes(q));
-  [['stat-total',cs.length],['stat-active',cs.filter(c=>ps.some(p=>p.client===c.name)).length],['stat-proj',ps.length],['stat-urg2',ps.filter(p=>p.urg==='h').length]].forEach(([id,v])=>{const el=$(id);if(el)el.textContent=v;});
-  const list=$('clientsList'); if(!list) return;
-  if(!fl.length){list.innerHTML=`<div style="padding:24px;text-align:center;color:var(--g3);font-size:12px">${t('clients')}</div>`;return;}
-  list.innerHTML=fl.map(c=>{
-    const cp=ps.filter(p=>p.client===c.name),last=cp.sort((a,b)=>(b.deadline||'').localeCompare(a.deadline||''))[0],urg=cp.some(p=>p.urg==='h');
-    return `<div class="tbl-row clients-cols">
-      <div><div style="font-size:12.5px;font-weight:600">${c.name}</div><div style="font-size:10.5px;color:var(--g4)">${c.industry||''}</div></div>
-      <div><div style="font-size:12px">${c.contact||'—'}</div><div style="font-size:10.5px;color:var(--g4)">${c.email||''}</div></div>
-      <div><span style="background:var(--grn2);color:var(--grn);font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600">${cp.length}</span></div>
-      <div style="font-size:11px;color:var(--g4)">${last?.deadline||'—'}</div>
-      <div>${urg?`<span style="background:#3d1e1e;color:var(--red);font-size:10px;padding:2px 8px;border-radius:8px">${t('urgent')}</span>`:`<span style="background:var(--grn2);color:var(--grn);font-size:10px;padding:2px 8px;border-radius:8px">OK</span>`}</div>
-      <div style="display:flex;gap:5px">
-        <button onclick="editClient('${c._id}')" style="background:var(--b2);border:none;border-radius:4px;color:var(--g5);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-pencil" style="font-size:13px"></i></button>
-        <button onclick="deleteClient('${c._id}')" style="background:#3d1e1e;border:none;border-radius:4px;color:var(--red);width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-trash" style="font-size:13px"></i></button>
-      </div>
-    </div>`;
-  }).join('');
-};
-function editClient(id){
-  const c=(window._clients||[]).find(x=>x._id===id); if(!c) return;
-  _editIds.client=id; $('clientModalTitle').textContent=t('newClient');
-  $('cName').value=c.name||''; $('cContact').value=c.contact||''; $('cEmail').value=c.email||''; $('cPhone').value=c.phone||''; $('cAddr').value=c.addr||'';
-  openModal('client');
-}
-async function saveClient(){
-  const name=$('cName').value.trim(); if(!name){$('cName').focus();return;}
-  const data={name,contact:$('cContact').value,email:$('cEmail').value,phone:$('cPhone').value,addr:$('cAddr').value,industry:$('cIndustry').value};
-  try{if(_editIds.client)await window._db.updateClient(_editIds.client,data);else await window._db.addClient(data);closeModal('client');_editIds.client=null;toast('success','ti-user-check',t('save'));}
-  catch(e){toast('error','ti-alert-circle',e.message);}
-}
-async function deleteClient(id){await window._db.deleteClient(id);}
-
-// ── REPORTS ───────────────────────────────────────────────────────────────────
-window.renderReports=function(){
-  const ps=window._projects||[],cs=window._clients||[],st=window._staff||[];
-  [['rpt-active',ps.length],['rpt-urg',ps.filter(p=>p.urg==='h').length],['rpt-cl',cs.length],['rpt-st',st.length]].forEach(([id,v])=>{const el=$(id);if(el)el.textContent=v;});
-  const stages=$('rpt-stages'),depts=window._departments||[];
-  if(stages)stages.innerHTML=depts.map(c=>{const n=ps.filter(p=>p.col===c.id).length,pct=ps.length?Math.round(n/ps.length*100):0;return`<div class="br"><span class="bl">${c.title.split(' ').pop()}</span><div class="bt"><div class="bf" style="width:${pct}%;background:${c.color}"></div></div><span class="bv">${n}</span></div>`;}).join('');
-  const ugb=$('rpt-urgs');
-  if(ugb){const tot=ps.length||1,uh=ps.filter(p=>p.urg==='h').length,um=ps.filter(p=>p.urg==='m').length,ul=ps.filter(p=>p.urg==='l').length;ugb.innerHTML=`<div class="br"><span class="bl">🔴 ${t('urgent')}</span><div class="bt"><div class="bf" style="width:${Math.round(uh/tot*100)}%;background:var(--red)"></div></div><span class="bv">${uh}</span></div><div class="br"><span class="bl">🟡 ${t('medium')}</span><div class="bt"><div class="bf" style="width:${Math.round(um/tot*100)}%;background:var(--amber)"></div></div><span class="bv">${um}</span></div><div class="br"><span class="bl">🟢 ${t('normal')}</span><div class="bt"><div class="bf" style="width:${Math.round(ul/tot*100)}%;background:var(--grn)"></div></div><span class="bv">${ul}</span></div>`;}
-  const team=$('rpt-team');
-  if(team)team.innerHTML=st.map(s=>{const sc=ps.filter(p=>p.resp===staffFullName(s)).length,dc=deptColor(s.department),ini=initials(s.firstName,s.lastName);return`<div style="background:var(--b1);border-radius:var(--rads);padding:10px 12px;display:flex;align-items:center;gap:8px"><div class="aa" style="width:26px;height:26px;font-size:10px;background:${dc}22;color:${dc}">${ini}</div><div style="flex:1"><div style="font-size:12px;font-weight:600">${staffFullName(s)}</div><div style="font-size:10px;color:var(--g4)">${deptTitle(s.department)}</div></div><div style="font-size:16px;font-weight:700;color:var(--grn)">${sc}</div></div>`;}).join('');
-};
-
-// ── CALENDAR ──────────────────────────────────────────────────────────────────
-function calNav(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
-function calGoToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCalendar();}
-function renderCalendar(){
-  const M={ro:['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'],en:['January','February','March','April','May','June','July','August','September','October','November','December'],de:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],fr:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],it:['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'],es:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],hu:['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'],bg:['Януари','Февруари','Март','Април','Май','Юни','Юли','Август','Септември','Октомври','Ноември','Декември'],uk:['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'],nl:['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']};
-  const D={ro:['LUN','MAR','MIE','JOI','VIN','SÂM','DUM'],en:['MON','TUE','WED','THU','FRI','SAT','SUN'],de:['MO','DI','MI','DO','FR','SA','SO'],fr:['LUN','MAR','MER','JEU','VEN','SAM','DIM'],it:['LUN','MAR','MER','GIO','VEN','SAB','DOM'],es:['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'],hu:['HÉT','KED','SZE','CSÜ','PÉN','SZO','VAS'],bg:['ПОН','ВТО','СРЯ','ЧЕТ','ПЕТ','СЪБ','НЕД'],uk:['ПОН','ВІВ','СЕР','ЧЕТ','ПЯТ','СУБ','НЕД'],nl:['MA','DI','WO','DO','VR','ZA','ZO']};
-  const ml=M[_lang]||M.ro, dl=D[_lang]||D.ro;
-  $('calTitle').textContent=ml[calMonth]+' '+calYear;
-  const dn=$('calDayNames'); if(dn){dn.innerHTML=dl.map((d,i)=>`<div style="text-align:center;font-size:10.5px;font-weight:700;color:${i>=5?'var(--red)':'var(--g4)'};padding:6px 0">${d}</div>`).join('');}
-  const grid=$('calGrid'); grid.innerHTML='';
-  const today=new Date(); today.setHours(0,0,0,0);
-  const first=new Date(calYear,calMonth,1),last=new Date(calYear,calMonth+1,0);
-  let sd=first.getDay(); if(sd===0) sd=7;
-  for(let i=1;i<sd;i++){const e=document.createElement('div');e.style.cssText='min-height:70px;background:var(--b1);border-radius:4px;opacity:.3;';grid.appendChild(e);}
-  for(let d=1;d<=last.getDate();d++){
-    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday=new Date(calYear,calMonth,d).getTime()===today.getTime();
-    const dp=(window._projects||[]).filter(p=>p.deadline===ds);
-    const cell=document.createElement('div'); cell.className='cal-day'+(isToday?' today':'');
-    let html=`<div style="font-size:11px;font-weight:700;color:${isToday?'var(--grn)':'var(--g5)'};margin-bottom:4px">${d}</div>`;
-    dp.forEach(p=>{const c=(window._departments||[]).find(col=>col.id===p.col);html+=`<div class="cal-ev" onclick="openDetail('${p._id}')" style="background:${c?.color||'#555'}22;border-left:2px solid ${c?.color||'#555'}">${p.client}</div>`;});
-    cell.innerHTML=html; grid.appendChild(cell);
-  }
-}
-
-// ── TV MODE ───────────────────────────────────────────────────────────────────
-function toggleTV(){_tvMode=!_tvMode;document.body.classList.toggle('tv',_tvMode);$('tvBtn').style.color=_tvMode?'var(--grn)':'';toast('info','ti-device-tv','TV Mode '+(_tvMode?'ON':'OFF'));}
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-window.toast=function(type,icon,msg){
-  const w=$('toastWrap'),el=document.createElement('div');
-  el.className='toast '+type;
-  el.innerHTML=`<i class="ti ${icon}" style="font-size:16px"></i><span>${msg}</span>`;
-  w.appendChild(el);
-  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3500);
-};
-
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// Fade-in on scroll
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.1});
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
 </script>
 </body>
 </html>
