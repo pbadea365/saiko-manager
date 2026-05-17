@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Saiko – Seed Firestore</title>
+<style>
+  body{background:#0d0d0d;color:#f0f0f0;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;}
+  h2{color:#5ec97a;font-size:20px;}
+  p{color:#888;font-size:13px;text-align:center;max-width:480px;}
+  button{background:#5ec97a;color:#0d0d0d;border:none;border-radius:8px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;}
+  button:disabled{background:#333;color:#666;cursor:not-allowed;}
+  #log{background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:16px;width:100%;max-width:600px;max-height:360px;overflow-y:auto;font-size:12px;line-height:1.8;}
+  .ok{color:#5ec97a;} .err{color:#e05252;} .info{color:#5b9bdb;}
+</style>
+</head>
+<body>
+<h2>🌱 Saiko PMS – Seed Firestore</h2>
+<p>Apasă butonul pentru a popula Firestore cu 40 angajați, 10 clienți și ~45 proiecte demo.</p>
+<button id="btn" onclick="runSeed()">▶ Pornește Seed-ul</button>
+<div id="log"></div>
+
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCQvrVCn7zYa39d6dFIOw9CcE-iVVAQaIA",
+  authDomain: "saiko-media.firebaseapp.com",
+  projectId: "saiko-media",
+  storageBucket: "saiko-media.firebasestorage.app",
+  messagingSenderId: "226457269371",
+  appId: "1:226457269371:web:e054ad6a09794605839ede"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const log = (msg, cls='ok') => {
+  const d = document.getElementById('log');
+  d.innerHTML += `<div class="${cls}">${msg}</div>`;
+  d.scrollTop = d.scrollHeight;
+};
+
+// ── DEPARTMENTS (coloane Kanban) ──────────────────────────────────────────────
+const DEPTS = [
+  {id:'comenzi',     title:'Comenzi Noi',       color:'#5b9bdb'},
+  {id:'grafica',     title:'Proiectare Grafică', color:'#b07fe0'},
+  {id:'autocad',     title:'Proiectare Tehnică', color:'#e09a34'},
+  {id:'atelier',     title:'Producție Atelier',  color:'#5ec97a'},
+  {id:'implementare',title:'Implementare',        color:'#e05252'},
+];
+
+// ── STAFF – 40 angajați ───────────────────────────────────────────────────────
+const STAFF = [
+  // Grafică (10)
+  {firstName:'Maria',    lastName:'Ionescu',    department:'grafica', role:'Art Director',       email:'maria.i@saiko.ro',    phone:'0721 100 001', password:'grafica2025'},
+  {firstName:'Andrei',   lastName:'Popescu',    department:'grafica', role:'Graphic Designer',   email:'andrei.p@saiko.ro',   phone:'0721 100 002', password:'grafica2025'},
+  {firstName:'Elena',    lastName:'Constantin', department:'grafica', role:'UI Designer',         email:'elena.c@saiko.ro',    phone:'0721 100 003', password:'grafica2025'},
+  {firstName:'Mihai',    lastName:'Dumitrescu', department:'grafica', role:'Graphic Designer',   email:'mihai.d@saiko.ro',    phone:'0721 100 004', password:'grafica2025'},
+  {firstName:'Raluca',   lastName:'Stan',       department:'grafica', role:'Junior Designer',    email:'raluca.s@saiko.ro',   phone:'0721 100 005', password:'grafica2025'},
+  {firstName:'Bogdan',   lastName:'Marin',      department:'grafica', role:'Senior Designer',    email:'bogdan.m@saiko.ro',   phone:'0721 100 006', password:'grafica2025'},
+  {firstName:'Ioana',    lastName:'Popa',       department:'grafica', role:'Graphic Designer',   email:'ioana.p@saiko.ro',    phone:'0721 100 007', password:'grafica2025'},
+  {firstName:'Cristian', lastName:'Rusu',       department:'grafica', role:'Motion Designer',    email:'cristian.r@saiko.ro', phone:'0721 100 008', password:'grafica2025'},
+  {firstName:'Diana',    lastName:'Gheorghe',   department:'grafica', role:'Brand Designer',     email:'diana.g@saiko.ro',    phone:'0721 100 009', password:'grafica2025'},
+  {firstName:'Florin',   lastName:'Matei',      department:'grafica', role:'Junior Designer',    email:'florin.m@saiko.ro',   phone:'0721 100 010', password:'grafica2025'},
+  // AutoCAD / Proiectare Tehnică (10)
+  {firstName:'George',   lastName:'Stoica',     department:'autocad', role:'Inginer Proiectant', email:'george.s@saiko.ro',   phone:'0722 200 001', password:'autocad2025'},
+  {firstName:'Mihaela',  lastName:'Radu',       department:'autocad', role:'Proiectant CAD',     email:'mihaela.r@saiko.ro',  phone:'0722 200 002', password:'autocad2025'},
+  {firstName:'Alexandru',lastName:'Dinu',       department:'autocad', role:'Inginer Structuri',  email:'alex.d@saiko.ro',     phone:'0722 200 003', password:'autocad2025'},
+  {firstName:'Nicoleta', lastName:'Petre',      department:'autocad', role:'Proiectant CAD',     email:'nicoleta.p@saiko.ro', phone:'0722 200 004', password:'autocad2025'},
+  {firstName:'Radu',     lastName:'Oprea',      department:'autocad', role:'Senior CAD',         email:'radu.o@saiko.ro',     phone:'0722 200 005', password:'autocad2025'},
+  {firstName:'Claudia',  lastName:'Barbu',      department:'autocad', role:'Proiectant Junior',  email:'claudia.b@saiko.ro',  phone:'0722 200 006', password:'autocad2025'},
+  {firstName:'Sorin',    lastName:'Vlad',       department:'autocad', role:'Inginer CAD',        email:'sorin.v@saiko.ro',    phone:'0722 200 007', password:'autocad2025'},
+  {firstName:'Adriana',  lastName:'Tudor',      department:'autocad', role:'Proiectant CAD',     email:'adriana.t@saiko.ro',  phone:'0722 200 008', password:'autocad2025'},
+  {firstName:'Marius',   lastName:'Cojocaru',   department:'autocad', role:'Senior CAD',         email:'marius.c@saiko.ro',   phone:'0722 200 009', password:'autocad2025'},
+  {firstName:'Simona',   lastName:'Florescu',   department:'autocad', role:'Inginer Proiectant', email:'simona.f@saiko.ro',   phone:'0722 200 010', password:'autocad2025'},
+  // Atelier (12)
+  {firstName:'Vasile',   lastName:'Costea',     department:'atelier', role:'Operator CNC',       email:'vasile.co@saiko.ro',  phone:'0733 300 001', password:'atelier2025'},
+  {firstName:'Ion',      lastName:'Neagu',      department:'atelier', role:'Sudor',              email:'ion.n@saiko.ro',      phone:'0733 300 002', password:'atelier2025'},
+  {firstName:'Dan',      lastName:'Luca',       department:'atelier', role:'Finiseur',           email:'dan.l@saiko.ro',      phone:'0733 300 003', password:'atelier2025'},
+  {firstName:'Petre',    lastName:'Iosif',      department:'atelier', role:'Operator Laser',     email:'petre.i@saiko.ro',    phone:'0733 300 004', password:'atelier2025'},
+  {firstName:'Gheorghe', lastName:'Badea',      department:'atelier', role:'Lacatuserie',        email:'gheorghe.b@saiko.ro', phone:'0733 300 005', password:'atelier2025'},
+  {firstName:'Nicu',     lastName:'Enache',     department:'atelier', role:'Operator CNC',       email:'nicu.e@saiko.ro',     phone:'0733 300 006', password:'atelier2025'},
+  {firstName:'Aurel',    lastName:'Ciobanu',    department:'atelier', role:'Asamblor',           email:'aurel.c@saiko.ro',    phone:'0733 300 007', password:'atelier2025'},
+  {firstName:'Liviu',    lastName:'Toma',       department:'atelier', role:'Electrician',        email:'liviu.t@saiko.ro',    phone:'0733 300 008', password:'atelier2025'},
+  {firstName:'Costel',   lastName:'Iordache',   department:'atelier', role:'Vopsitor',           email:'costel.i@saiko.ro',   phone:'0733 300 009', password:'atelier2025'},
+  {firstName:'Traian',   lastName:'Mocanu',     department:'atelier', role:'Debitare',           email:'traian.m@saiko.ro',   phone:'0733 300 010', password:'atelier2025'},
+  {firstName:'Marcel',   lastName:'Sandu',      department:'atelier', role:'Operator Laser',     email:'marcel.s@saiko.ro',   phone:'0733 300 011', password:'atelier2025'},
+  {firstName:'Victor',   lastName:'Anghel',     department:'atelier', role:'Asamblor Senior',    email:'victor.a@saiko.ro',   phone:'0733 300 012', password:'atelier2025'},
+  // Implementare / Montaj (8)
+  {firstName:'Florin',   lastName:'Serban',     department:'implementare', role:'Sef Echipa Montaj', email:'florin.se@saiko.ro', phone:'0744 400 001', password:'montaj2025'},
+  {firstName:'Marian',   lastName:'Pavel',      department:'implementare', role:'Monteur Senior',    email:'marian.p@saiko.ro',  phone:'0744 400 002', password:'montaj2025'},
+  {firstName:'Catalin',  lastName:'Dobre',      department:'implementare', role:'Monteur',           email:'catalin.d@saiko.ro', phone:'0744 400 003', password:'montaj2025'},
+  {firstName:'Dorin',    lastName:'Chirita',    department:'implementare', role:'Monteur',           email:'dorin.ch@saiko.ro',  phone:'0744 400 004', password:'montaj2025'},
+  {firstName:'Laurentiu',lastName:'Rosu',       department:'implementare', role:'Electrician Teren', email:'laurentiu.r@saiko.ro',phone:'0744 400 005', password:'montaj2025'},
+  {firstName:'Bogdan',   lastName:'Nistor',     department:'implementare', role:'Monteur Senior',    email:'bogdan.n@saiko.ro',  phone:'0744 400 006', password:'montaj2025'},
+  {firstName:'Razvan',   lastName:'Bucur',      department:'implementare', role:'Monteur',           email:'razvan.b@saiko.ro',  phone:'0744 400 007', password:'montaj2025'},
+  {firstName:'Iulian',   lastName:'Morar',      department:'implementare', role:'Sofer + Monteur',   email:'iulian.mo@saiko.ro', phone:'0744 400 008', password:'montaj2025'},
+];
+
+// ── CLIENTS ───────────────────────────────────────────────────────────────────
+const CLIENTS = [
+  {name:'Credit Europe Bank', contact:'Daniela Marinescu', email:'d.marinescu@crediteurope.ro', phone:'021 300 1001', addr:'Str. Tipografilor 11-15, București', industry:'Financiar'},
+  {name:'Romtelecom',         contact:'Andrei Ghita',      email:'a.ghita@romtelecom.ro',       phone:'021 300 2002', addr:'Calea Floreasca 39, București',      industry:'Telecomunicații'},
+  {name:'Digi Romania',       contact:'Mihai Dragomir',    email:'m.dragomir@digi.ro',          phone:'021 300 3003', addr:'Str. Dr. Staicovici 75, București',   industry:'Telecomunicații'},
+  {name:'Coca Cola Romania',  contact:'Ioana Petrescu',    email:'i.petrescu@coca-cola.ro',     phone:'021 300 4004', addr:'Șos. București-Ploiești 42, Buc.',    industry:'FMCG'},
+  {name:'Renault Romania',    contact:'Laurent Dupont',    email:'l.dupont@renault.ro',         phone:'021 300 5005', addr:'Calea Giulești 1-3, Mioveni',         industry:'Auto'},
+  {name:'British American Tobacco', contact:'Sarah Connor', email:'s.connor@bat.com',          phone:'021 300 6006', addr:'Bd. Dimitrie Pompeiu 5-7, București',  industry:'FMCG'},
+  {name:'Kaufland Romania',   contact:'Klaus Werner',      email:'k.werner@kaufland.ro',        phone:'021 300 7007', addr:'Str. Câmpia Libertății 1, București',  industry:'Retail'},
+  {name:'Lidl Romania',       contact:'Hans Mueller',      email:'h.mueller@lidl.ro',           phone:'021 300 8008', addr:'Calea Giulești 201, București',        industry:'Retail'},
+  {name:'Penny Romania',      contact:'Stefan Ionescu',    email:'s.ionescu@penny.ro',          phone:'021 300 9009', addr:'Bd. Unirii 22, București',             industry:'Retail'},
+  {name:'Carrefour Romania',  contact:'Pierre Leblanc',    email:'p.leblanc@carrefour.ro',      phone:'021 300 0010', addr:'Calea Vitan 55, București',            industry:'Retail'},
+];
+
+// ── PROJECTS – ~4-5 per client ────────────────────────────────────────────────
+const today = new Date();
+const d = (days) => {
+  const dt = new Date(today);
+  dt.setDate(dt.getDate() + days);
+  return dt.toISOString().split('T')[0];
+};
+
+const PRODUCTS = ['Litere volumetrice inox','Casetă luminoasă LED','Totem publicitar','Panou LED exterior','Signalistică direcțională','Branding showroom','Litere canal inox','Panou indicator intrare','Mesh publicitar','Casetă iluminată față magazin'];
+
+const STAFF_NAMES = {
+  grafica: ['Maria Ionescu','Andrei Popescu','Elena Constantin','Bogdan Marin','Ioana Popa'],
+  autocad: ['George Stoica','Mihaela Radu','Radu Oprea','Marius Cojocaru','Alexandru Dinu'],
+  atelier: ['Vasile Costea','Ion Neagu','Dan Luca','Petre Iosif','Aurel Ciobanu'],
+  implementare: ['Florin Serban','Marian Pavel','Catalin Dobre','Bogdan Nistor','Razvan Bucur'],
+};
+
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const PROJECTS_DATA = [
+  // Credit Europe Bank
+  {client:'Credit Europe Bank', type:'Litere volumetrice inox',     col:'comenzi',     urg:'h', deadline:d(5),  resp:pick(STAFF_NAMES.grafica), prog:10, notes:'Litere iluminate LED pentru fațada sediului central.'},
+  {client:'Credit Europe Bank', type:'Signalistică direcțională',   col:'grafica',     urg:'m', deadline:d(15), resp:pick(STAFF_NAMES.grafica), prog:40, notes:'Sistem complet signalistică interioară 3 etaje.'},
+  {client:'Credit Europe Bank', type:'Casetă luminoasă LED',        col:'autocad',     urg:'l', deadline:d(30), resp:pick(STAFF_NAMES.autocad), prog:65, notes:'Casetă dubleface pentru intrare principală.'},
+  {client:'Credit Europe Bank', type:'Totem publicitar',             col:'atelier',     urg:'m', deadline:d(20), resp:pick(STAFF_NAMES.atelier), prog:80, notes:'Totem extern inox periat 4m înălțime.'},
+  {client:'Credit Europe Bank', type:'Panou LED exterior',           col:'implementare',urg:'h', deadline:d(3),  resp:pick(STAFF_NAMES.implementare), prog:92, notes:'Montaj finalizat, recepție miercuri.'},
+
+  // Romtelecom
+  {client:'Romtelecom', type:'Branding showroom',           col:'comenzi',     urg:'m', deadline:d(25), resp:pick(STAFF_NAMES.grafica), prog:5,  notes:'Rebrand complet showroom Floreasca.'},
+  {client:'Romtelecom', type:'Litere canal inox',           col:'grafica',     urg:'l', deadline:d(40), resp:pick(STAFF_NAMES.grafica), prog:30, notes:'Set litere canal pentru 5 locații.'},
+  {client:'Romtelecom', type:'Signalistică direcțională',   col:'autocad',     urg:'m', deadline:d(22), resp:pick(STAFF_NAMES.autocad), prog:55, notes:'Planuri debitare optimizate -15% material.'},
+  {client:'Romtelecom', type:'Casetă iluminată față magazin',col:'atelier',    urg:'l', deadline:d(35), resp:pick(STAFF_NAMES.atelier), prog:70, notes:'LED strip 3000K montat și testat.'},
+  {client:'Romtelecom', type:'Panou indicator intrare',     col:'implementare',urg:'m', deadline:d(8),  resp:pick(STAFF_NAMES.implementare), prog:88, notes:'Montaj programat joi dimineața.'},
+
+  // Digi Romania
+  {client:'Digi Romania', type:'Totem publicitar',          col:'comenzi',     urg:'h', deadline:d(7),  resp:pick(STAFF_NAMES.grafica), prog:15, notes:'Totem dublu față pentru centrul comercial.'},
+  {client:'Digi Romania', type:'Litere volumetrice inox',   col:'grafica',     urg:'m', deadline:d(18), resp:pick(STAFF_NAMES.grafica), prog:45, notes:'Font Digi conform brand book 2024.'},
+  {client:'Digi Romania', type:'Casetă luminoasă LED',      col:'autocad',     urg:'l', deadline:d(28), resp:pick(STAFF_NAMES.autocad), prog:60, notes:'Optimizare debitare plexiglas 8mm.'},
+  {client:'Digi Romania', type:'Branding showroom',         col:'atelier',     urg:'m', deadline:d(14), resp:pick(STAFF_NAMES.atelier), prog:75, notes:'Vopsire în câmp electrostatic finalizată.'},
+  {client:'Digi Romania', type:'Panou LED exterior',        col:'atelier',     urg:'h', deadline:d(6),  resp:pick(STAFF_NAMES.atelier), prog:85, notes:'Asamblare LED în curs, testare azi.'},
+
+  // Coca Cola Romania
+  {client:'Coca Cola Romania', type:'Mesh publicitar',       col:'comenzi',    urg:'l', deadline:d(45), resp:pick(STAFF_NAMES.grafica), prog:0,  notes:'Mesh 12x4m pentru fațada depozitului.'},
+  {client:'Coca Cola Romania', type:'Casetă iluminată față magazin',col:'grafica',urg:'m',deadline:d(20),resp:pick(STAFF_NAMES.grafica), prog:35, notes:'Design aliniat campaniei Summer 2025.'},
+  {client:'Coca Cola Romania', type:'Signalistică direcțională',col:'autocad', urg:'l', deadline:d(32), resp:pick(STAFF_NAMES.autocad), prog:50, notes:'Sisteme signalistică pentru 8 magazine.'},
+  {client:'Coca Cola Romania', type:'Totem publicitar',      col:'implementare',urg:'m',deadline:d(10), resp:pick(STAFF_NAMES.implementare), prog:90, notes:'Totem 3m, instalat, recepție luni.'},
+  {client:'Coca Cola Romania', type:'Panou indicator intrare',col:'atelier',   urg:'h', deadline:d(4),  resp:pick(STAFF_NAMES.atelier), prog:78, notes:'Urgentizat, livrare vineri.'},
+
+  // Renault Romania
+  {client:'Renault Romania', type:'Branding showroom',      col:'comenzi',     urg:'m', deadline:d(30), resp:pick(STAFF_NAMES.grafica), prog:8,  notes:'Showroom Mioveni, suprafață 2400mp.'},
+  {client:'Renault Romania', type:'Litere volumetrice inox',col:'grafica',     urg:'l', deadline:d(42), resp:pick(STAFF_NAMES.grafica), prog:25, notes:'Litere Renault în inox periat 304.'},
+  {client:'Renault Romania', type:'Totem publicitar',        col:'autocad',    urg:'m', deadline:d(25), resp:pick(STAFF_NAMES.autocad), prog:58, notes:'Totem identitate nouă Renault 2025.'},
+  {client:'Renault Romania', type:'Casetă luminoasă LED',   col:'atelier',    urg:'l', deadline:d(38), resp:pick(STAFF_NAMES.atelier), prog:65, notes:'Aluminiu extrudat + folie opal.'},
+  {client:'Renault Romania', type:'Panou LED exterior',      col:'implementare',urg:'m',deadline:d(12), resp:pick(STAFF_NAMES.implementare), prog:95, notes:'Recepție finală joi cu client.'},
+
+  // British American Tobacco
+  {client:'British American Tobacco', type:'Signalistică direcțională',col:'comenzi',urg:'h',deadline:d(9),resp:pick(STAFF_NAMES.grafica), prog:20, notes:'Signalistică pentru sediul central Barbu Văcărescu.'},
+  {client:'British American Tobacco', type:'Litere canal inox',col:'grafica',urg:'m', deadline:d(21), resp:pick(STAFF_NAMES.grafica), prog:50, notes:'Litere canal cu iluminare posterioară.'},
+  {client:'British American Tobacco', type:'Panou indicator intrare',col:'autocad',urg:'l',deadline:d(35),resp:pick(STAFF_NAMES.autocad), prog:40, notes:'4 panouri diferite, debitare laser.'},
+  {client:'British American Tobacco', type:'Casetă luminoasă LED',col:'atelier',urg:'m',deadline:d(18),resp:pick(STAFF_NAMES.atelier), prog:82, notes:'Finalizare asamblare, test culori.'},
+
+  // Kaufland Romania
+  {client:'Kaufland Romania', type:'Litere volumetrice inox',col:'comenzi',   urg:'l', deadline:d(50), resp:pick(STAFF_NAMES.grafica), prog:3,  notes:'Brief primit, așteptăm contract semnat.'},
+  {client:'Kaufland Romania', type:'Casetă iluminată față magazin',col:'grafica',urg:'m',deadline:d(22),resp:pick(STAFF_NAMES.grafica), prog:38, notes:'Format standard Kaufland, 6 casete.'},
+  {client:'Kaufland Romania', type:'Totem publicitar',        col:'autocad',   urg:'h', deadline:d(11), resp:pick(STAFF_NAMES.autocad), prog:72, notes:'Totem 5m cu sistem anti-vânt, urgent.'},
+  {client:'Kaufland Romania', type:'Signalistică direcțională',col:'atelier',  urg:'l', deadline:d(40), resp:pick(STAFF_NAMES.atelier), prog:60, notes:'Set 42 panouri signalistică internă.'},
+  {client:'Kaufland Romania', type:'Panou LED exterior',      col:'implementare',urg:'m',deadline:d(7), resp:pick(STAFF_NAMES.implementare), prog:91, notes:'Montaj macara confirmat miercuri 08:00.'},
+
+  // Lidl Romania
+  {client:'Lidl Romania', type:'Casetă luminoasă LED',      col:'comenzi',    urg:'m', deadline:d(28), resp:pick(STAFF_NAMES.grafica), prog:10, notes:'Standard Lidl, 8 locații noi.'},
+  {client:'Lidl Romania', type:'Litere volumetrice inox',   col:'grafica',    urg:'l', deadline:d(36), resp:pick(STAFF_NAMES.grafica), prog:42, notes:'Litere LIDL + sigla – inox oglindă.'},
+  {client:'Lidl Romania', type:'Signalistică direcțională', col:'autocad',    urg:'m', deadline:d(20), resp:pick(STAFF_NAMES.autocad), prog:63, notes:'Optimizat plan debitare, economie 18%.'},
+  {client:'Lidl Romania', type:'Totem publicitar',           col:'atelier',   urg:'h', deadline:d(8),  resp:pick(STAFF_NAMES.atelier), prog:77, notes:'Sudură finalizată, urmează vopsire.'},
+  {client:'Lidl Romania', type:'Branding showroom',          col:'implementare',urg:'l',deadline:d(16), resp:pick(STAFF_NAMES.implementare), prog:89, notes:'Montaj pe 3 zile, echipă 4 persoane.'},
+
+  // Penny Romania
+  {client:'Penny Romania', type:'Panou indicator intrare',  col:'comenzi',    urg:'l', deadline:d(55), resp:pick(STAFF_NAMES.grafica), prog:0,  notes:'10 magazine noi, concept în așteptare.'},
+  {client:'Penny Romania', type:'Casetă iluminată față magazin',col:'grafica', urg:'m', deadline:d(24), resp:pick(STAFF_NAMES.grafica), prog:33, notes:'Grafică Penny Market conform standarde 2025.'},
+  {client:'Penny Romania', type:'Litere canal inox',         col:'autocad',   urg:'l', deadline:d(38), resp:pick(STAFF_NAMES.autocad), prog:47, notes:'Litere canal 40cm înălțime, iluminate.'},
+  {client:'Penny Romania', type:'Totem publicitar',          col:'atelier',   urg:'m', deadline:d(17), resp:pick(STAFF_NAMES.atelier), prog:68, notes:'Galvanizat + vopsit, asamblare azi.'},
+  {client:'Penny Romania', type:'Signalistică direcțională', col:'implementare',urg:'h',deadline:d(2), resp:pick(STAFF_NAMES.implementare), prog:97, notes:'Recepție finală mâine cu director magazin.'},
+
+  // Carrefour Romania
+  {client:'Carrefour Romania', type:'Mesh publicitar',       col:'comenzi',   urg:'h', deadline:d(6),  resp:pick(STAFF_NAMES.grafica), prog:18, notes:'Mesh 20x6m, print UV rezistent UV.'},
+  {client:'Carrefour Romania', type:'Litere volumetrice inox',col:'grafica',  urg:'m', deadline:d(19), resp:pick(STAFF_NAMES.grafica), prog:55, notes:'Litere CARREFOUR + C pe fond albastru.'},
+  {client:'Carrefour Romania', type:'Casetă luminoasă LED',  col:'autocad',  urg:'l', deadline:d(33), resp:pick(STAFF_NAMES.autocad), prog:44, notes:'6 casete, format standard hipermarket.'},
+  {client:'Carrefour Romania', type:'Panou LED exterior',     col:'atelier',  urg:'m', deadline:d(15), resp:pick(STAFF_NAMES.atelier), prog:80, notes:'LED P6 outdoor, cabinet aluminiu.'},
+  {client:'Carrefour Romania', type:'Totem publicitar',       col:'implementare',urg:'h',deadline:d(4),resp:pick(STAFF_NAMES.implementare), prog:93, notes:'Autorizatie montaj obținută, echipă gata.'},
+];
+
+window.runSeed = async function(){
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Se rulează...';
+  log('🚀 Pornind seed-ul...','info');
+
+  try {
+    // Staff
+    log('👥 Adăugare 40 angajați...','info');
+    for(const s of STAFF){
+      await addDoc(collection(db,'staff'),{...s, createdAt:serverTimestamp()});
+      log(`  ✓ ${s.firstName} ${s.lastName} (${s.department})`);
+    }
+
+    // Clients
+    log('🏢 Adăugare 10 clienți...','info');
+    for(const c of CLIENTS){
+      await addDoc(collection(db,'clients'),{...c, createdAt:serverTimestamp()});
+      log(`  ✓ ${c.name}`);
+    }
+
+    // Projects
+    log('📋 Adăugare proiecte...','info');
+    for(const p of PROJECTS_DATA){
+      const tags = p.col==='comenzi'?['Brief','Contract']:p.col==='grafica'?['Design','Concept']:p.col==='autocad'?['AutoCAD','Debitare']:p.col==='atelier'?['Producție','Asamblare']:['Montaj','Recepție'];
+      const tagsA = p.urg==='h'?['Urgent']:p.col==='implementare'?['Final']:[];
+      const tasks = [
+        {t:'Primire brief',d:p.prog>5},
+        {t:'Semnare contract',d:p.prog>15},
+        {t:'Proiectare grafică',d:p.prog>35},
+        {t:'Aprobare client',d:p.prog>55},
+        {t:'Proiectare tehnică',d:p.prog>65},
+        {t:'Producție atelier',d:p.prog>75},
+        {t:'Control calitate',d:p.prog>85},
+        {t:'Montaj & Recepție',d:p.prog>92},
+      ];
+      await addDoc(collection(db,'projects'),{
+        ...p, tags, tagsA, tasks,
+        createdAt:serverTimestamp()
+      });
+      log(`  ✓ ${p.client} – ${p.type}`);
+    }
+
+    log('','');
+    log('✅ SEED COMPLET! Poți închide această pagină și deschide aplicația.','ok');
+    btn.textContent = '✅ Gata!';
+  } catch(err){
+    log('❌ Eroare: '+err.message,'err');
+    btn.disabled=false;
+    btn.textContent='▶ Încearcă din nou';
+  }
+};
+</script>
+</body>
+</html>
