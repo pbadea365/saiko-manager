@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Krennic PMS – Sistemul de management al producției pentru companii de publicitate și semnalistică. Kanban live, echipă, clienți, notificări.">
+<title>Krennic PMS – Production Management System</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{
+  --blk:#0a0a0a;--dark:#111;--card:#181818;--b1:#222;--b2:#2e2e2e;
+  --g4:#777;--g5:#aaa;--g6:#e5e5e5;
+  --grn:#5ec97a;--grn2:#1a3d26;--grn3:#d4f5dc;
+  --red:#e05252;--amber:#e09a34;--blue:#5b9bdb;
+  --rad:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--blk);color:#f0f0f0;font-family:'Inter','Segoe UI',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo-ico{width:32px;height:32px;background:var(--grn);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#0a0a0a;}
+.nav-logo-text{font-size:15px;font-weight:700;}
+.nav-logo-sub{font-size:10px;color:var(--g4);}
+.nav-links{display:flex;align-items:center;gap:28px;}
+.nav-links a{color:var(--g5);text-decoration:none;font-size:13.5px;transition:color .15s;}
+.nav-links a:hover{color:#f0f0f0;}
+.nav-cta{background:var(--grn);color:#0a0a0a;border:none;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:filter .15s;}
+.nav-cta:hover{filter:brightness(1.1);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(94,201,122,.08) 0%,transparent 70%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--grn2);color:var(--grn);border:1px solid var(--grn);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;margin-bottom:28px;letter-spacing:.3px;}
+.hero h1{font-size:clamp(36px,6vw,72px);font-weight:800;line-height:1.1;margin-bottom:20px;letter-spacing:-1.5px;}
+.hero h1 span{color:var(--grn);}
+.hero p{font-size:clamp(15px,2vw,19px);color:var(--g5);max-width:620px;margin:0 auto 36px;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-primary{background:var(--grn);color:#0a0a0a;border:none;border-radius:10px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:filter .15s;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-secondary{background:transparent;color:#f0f0f0;border:1px solid var(--b2);border-radius:10px;padding:13px 28px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:border-color .15s;}
+.btn-secondary:hover{border-color:var(--g4);}
+.hero-stats{display:flex;gap:40px;justify-content:center;margin-top:60px;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-val{font-size:32px;font-weight:800;color:var(--grn);}
+.stat-lbl{font-size:12px;color:var(--g4);margin-top:2px;}
+
+/* MOCK KANBAN */
+.mock-wrap{padding:0 24px 80px;max-width:1100px;margin:0 auto;}
+.mock-label{text-align:center;font-size:12px;color:var(--g4);margin-bottom:16px;letter-spacing:.5px;text-transform:uppercase;}
+.mock-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;}
+.mock-board::-webkit-scrollbar{height:4px;}
+.mock-board::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.mock-col{min-width:180px;background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:10px;flex-shrink:0;}
+.mock-col-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.mock-dot{width:7px;height:7px;border-radius:50%;}
+.mock-col-title{font-size:11px;font-weight:700;flex:1;}
+.mock-cnt{background:var(--b1);color:var(--g4);font-size:9px;padding:1px 5px;border-radius:6px;}
+.mock-card{background:#101010;border:1px solid var(--b1);border-radius:6px;padding:8px 9px;margin-bottom:6px;}
+.mock-card:last-child{margin-bottom:0;}
+.mock-client{font-size:11px;font-weight:600;}
+.mock-type{font-size:9.5px;color:var(--g4);margin-top:1px;}
+.mock-tag{display:inline-block;background:var(--grn2);color:var(--grn);font-size:8.5px;padding:1px 6px;border-radius:6px;margin-top:5px;}
+.mock-tag.r{background:#3d1e1e;color:var(--red);}
+.mock-tag.a{background:#3d2a00;color:var(--amber);}
+.mock-prog{display:flex;align-items:center;gap:5px;margin-top:6px;}
+.mock-pb{flex:1;height:2.5px;background:var(--b2);border-radius:2px;overflow:hidden;}
+.mock-pf{height:100%;background:var(--grn);border-radius:2px;}
+.mock-pt{font-size:8.5px;color:var(--g4);}
+
+/* SECTIONS */
+section{padding:80px 24px;}
+.section-inner{max-width:1080px;margin:0 auto;}
+.section-badge{display:inline-flex;align-items:center;gap:6px;background:var(--b1);color:var(--g5);border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600;margin-bottom:16px;letter-spacing:.3px;}
+.section-badge i{color:var(--grn);font-size:13px;}
+h2{font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:14px;}
+h2 span{color:var(--grn);}
+.section-sub{font-size:16px;color:var(--g5);max-width:560px;line-height:1.7;margin-bottom:48px;}
+
+/* FEATURES GRID */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.feat{background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:24px;transition:border-color .2s;}
+.feat:hover{border-color:var(--b2);}
+.feat-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px;}
+.feat h3{font-size:15px;font-weight:700;margin-bottom:7px;}
+.feat p{font-size:13.5px;color:var(--g5);line-height:1.6;}
+
+/* FLOW */
+.flow{display:flex;gap:0;overflow-x:auto;margin-bottom:48px;padding-bottom:4px;}
+.flow::-webkit-scrollbar{height:3px;}
+.flow::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.flow-step{display:flex;align-items:center;gap:0;flex-shrink:0;}
+.flow-box{background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:14px 18px;min-width:160px;text-align:center;}
+.flow-num{font-size:11px;color:var(--grn);font-weight:700;margin-bottom:4px;}
+.flow-title{font-size:13px;font-weight:700;}
+.flow-sub{font-size:11px;color:var(--g4);margin-top:3px;}
+.flow-arrow{padding:0 8px;color:var(--g4);font-size:18px;flex-shrink:0;}
+
+/* WHY */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:640px){.why-grid{grid-template-columns:1fr;}}
+.why-item{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--b1);border-radius:var(--rad);padding:20px;}
+.why-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.why-item h4{font-size:14px;font-weight:700;margin-bottom:5px;}
+.why-item p{font-size:13px;color:var(--g5);line-height:1.6;}
+
+/* TECH STACK */
+.tech-grid{display:flex;flex-wrap:wrap;gap:10px;}
+.tech-pill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:8px 14px;font-size:13px;}
+.tech-pill i{font-size:16px;color:var(--grn);}
+
+/* CTA SECTION */
+.cta-section{background:var(--card);border:1px solid var(--b1);border-radius:20px;padding:60px 40px;text-align:center;margin:0 24px 80px;max-width:900px;margin-left:auto;margin-right:auto;}
+.cta-section h2{margin-bottom:14px;}
+.cta-section p{color:var(--g5);font-size:16px;max-width:480px;margin:0 auto 32px;}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b1);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-logo{display:flex;align-items:center;gap:8px;}
+.footer-copy{font-size:12px;color:var(--g4);}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{color:var(--g4);text-decoration:none;font-size:12.5px;}
+.footer-links a:hover{color:#f0f0f0;}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--b1);margin:0;}
+
+/* ANIMATIONS */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+
+@media(max-width:768px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .hero{padding:90px 20px 50px;}
+  .hero-stats{gap:24px;}
+  section{padding:56px 20px;}
+  .cta-section{padding:40px 24px;margin:0 16px 60px;}
+  footer{padding:24px 20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-ico">K</div>
+    <div>
+      <div class="nav-logo-text">Krennic PMS</div>
+      <div class="nav-logo-sub">Production Management</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Funcționalități</a>
+    <a href="#flow">Flux de lucru</a>
+    <a href="#why">De ce Saiko?</a>
+    <a href="#tech">Tehnologie</a>
+  </div>
+  <a href="/index.html" class="nav-cta"><i class="ti ti-arrow-right"></i> Deschide Aplicația</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-badge"><span class="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--grn);display:inline-block;animation:pulse 2s infinite"></span> Live · Firestore · PWA</div>
+  <h1>Producție fără<br><span>haos</span></h1>
+  <p>Krennic PMS este sistemul de management al producției construit special pentru companii de publicitate și semnalistică. De la comandă la montaj — totul vizibil, în timp real, pe orice dispozitiv.</p>
+  <div class="hero-btns">
+    <a href="/index.html" class="btn-primary"><i class="ti ti-layout-kanban"></i> Deschide Dashboard</a>
+    <a href="#features" class="btn-secondary"><i class="ti ti-arrow-down"></i> Descoperă mai mult</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-val">5</div><div class="stat-lbl">Etape de producție</div></div>
+    <div class="stat"><div class="stat-val">∞</div><div class="stat-lbl">Proiecte simultane</div></div>
+    <div class="stat"><div class="stat-val">10</div><div class="stat-lbl">Limbi disponibile</div></div>
+    <div class="stat"><div class="stat-val">0s</div><div class="stat-lbl">Timp de sincronizare</div></div>
+  </div>
+</section>
+
+<!-- MOCK KANBAN -->
+<div class="mock-wrap fade-in">
+  <div class="mock-label">— Dashboard Kanban live —</div>
+  <div class="mock-board">
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#5b9bdb"></div><div class="mock-col-title">Comenzi Noi</div><div class="mock-cnt">3</div></div>
+      <div class="mock-card"><div class="mock-client">Kaufland România</div><div class="mock-type">Litere volumetrice inox</div><span class="mock-tag r">Urgent</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:10%"></div></div><span class="mock-pt">10%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Digi Romania</div><div class="mock-type">Totem publicitar</div><span class="mock-tag a">Mediu</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:5%"></div></div><span class="mock-pt">5%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#b07fe0"></div><div class="mock-col-title">Proiectare Grafică</div><div class="mock-cnt">2</div></div>
+      <div class="mock-card"><div class="mock-client">Coca Cola</div><div class="mock-type">Casetă luminoasă LED</div><span class="mock-tag">Design activ</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:45%"></div></div><span class="mock-pt">45%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Renault România</div><div class="mock-type">Branding showroom</div><span class="mock-tag">Concept</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:30%"></div></div><span class="mock-pt">30%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#e09a34"></div><div class="mock-col-title">Proiectare Tehnică</div><div class="mock-cnt">2</div></div>
+      <div class="mock-card"><div class="mock-client">Lidl România</div><div class="mock-type">Signalistică direcțională</div><span class="mock-tag">La scară</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:65%"></div></div><span class="mock-pt">65%</span></div></div>
+      <div class="mock-card"><div class="mock-client">Penny România</div><div class="mock-type">Panou LED exterior</div><span class="mock-tag">AutoCAD</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:50%"></div></div><span class="mock-pt">50%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#5ec97a"></div><div class="mock-col-title">Producție Atelier</div><div class="mock-cnt">3</div></div>
+      <div class="mock-card"><div class="mock-client">Carrefour</div><div class="mock-type">Litere canal inox</div><span class="mock-tag">Pe bancul de lucru</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:80%"></div></div><span class="mock-pt">80%</span></div></div>
+      <div class="mock-card"><div class="mock-client">BAT</div><div class="mock-type">Casetă iluminată</div><span class="mock-tag">Finisaj</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:70%"></div></div><span class="mock-pt">70%</span></div></div>
+    </div>
+    <div class="mock-col">
+      <div class="mock-col-hdr"><div class="mock-dot" style="background:#e05252"></div><div class="mock-col-title">Implementare</div><div class="mock-cnt">1</div></div>
+      <div class="mock-card"><div class="mock-client">Credit Europe Bank</div><div class="mock-type">Totem exterior 5m</div><span class="mock-tag r">Montaj azi</span><div class="mock-prog"><div class="mock-pb"><div class="mock-pf" style="width:93%"></div></div><span class="mock-pt">93%</span></div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-sparkles"></i> Funcționalități</div>
+    <h2 class="fade-in">Tot ce ai nevoie,<br><span>nimic în plus</span></h2>
+    <p class="section-sub fade-in">Un sistem curat, fără birocrație. Fiecare funcție are un scop clar — să îți salveze timp și să elimine confuzia din producție.</p>
+    <div class="features-grid">
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-layout-kanban" style="color:#5b9bdb"></i></div>
+        <h3>Kanban Board Live</h3>
+        <p>Vizualizează toate proiectele pe coloane de producție. Drag & drop pentru a muta un proiect la etapa următoare. Orice schimbare apare instant pe toate dispozitivele.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:var(--grn2)"><i class="ti ti-refresh" style="color:var(--grn)"></i></div>
+        <h3>Sincronizare în Timp Real</h3>
+        <p>Bazat pe Firebase Firestore. Directorul vede pe laptop ce face atelierul pe tabletă, în același moment. Fără refresh, fără email, fără telefon inutil.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#2a1e3d"><i class="ti ti-bell-ringing" style="color:#b07fe0"></i></div>
+        <h3>Notificări Automate</h3>
+        <p>Când un proiect trece în Grafică, designerii sunt notificați instant. Când planurile tehnice sunt gata, atelierul primește sarcina. Zero intermediari.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#3d2a00"><i class="ti ti-shield-lock" style="color:var(--amber)"></i></div>
+        <h3>Permisiuni pe Departament</h3>
+        <p>Atelierul poate muta proiecte doar spre Implementare. Grafica — doar spre Tehnic. Nimeni nu poate sări etape sau muta în sens invers. Flux controlat.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-users" style="color:var(--grn)"></i></div>
+        <h3>Gestiune Echipă & Clienți</h3>
+        <p>Baza de date completă cu angajați, departamente, clienți și contacte. Totul accesibil din același loc, sincronizat cu proiectele active.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a2d3d"><i class="ti ti-device-mobile" style="color:var(--blue)"></i></div>
+        <h3>PWA – Instalabil pe Telefon</h3>
+        <p>Se instalează pe ecranul principal al oricărui telefon sau tabletă ca o aplicație nativă. Funcționează inclusiv pe televizoarele din atelier.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-calendar" style="color:var(--grn)"></i></div>
+        <h3>Calendar Deadline-uri</h3>
+        <p>Vizualizare lunară cu toate deadline-urile. Click pe orice proiect din calendar deschide fișa completă. Niciun termen nu mai trece neobservat.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-chart-bar" style="color:var(--blue)"></i></div>
+        <h3>Rapoarte & Statistici Live</h3>
+        <p>Distribuție proiecte pe etape, urgențe, performanța echipei. Datele se actualizează în timp real, direct din Firestore.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a1e2e"><i class="ti ti-palette" style="color:var(--blue)"></i></div>
+        <h3>Interfață Personalizabilă</h3>
+        <p>Culori, mărimi de font, formă carduri — toate setabile din panoul de Interfață. 10 limbi disponibile, salvate automat în cloud.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FLOW -->
+<section id="flow" style="background:var(--dark)">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-arrow-right"></i> Flux de lucru</div>
+    <h2 class="fade-in">De la comandă<br><span>la montaj</span></h2>
+    <p class="section-sub fade-in">Un flux logic, în 5 etape. Fiecare departament vede exact ce trebuie să facă, când trebuie să facă, fără să se amestece în treaba celorlalți.</p>
+    <div class="flow fade-in">
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#5b9bdb33">
+          <div class="flow-num" style="color:#5b9bdb">01</div>
+          <div class="flow-title">Comandă Nouă</div>
+          <div class="flow-sub">Brief, contract, date client</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#b07fe033">
+          <div class="flow-num" style="color:#b07fe0">02</div>
+          <div class="flow-title">Proiectare Grafică</div>
+          <div class="flow-sub">Concept, machetare, aprobare</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#e09a3433">
+          <div class="flow-num" style="color:#e09a34">03</div>
+          <div class="flow-title">Proiectare Tehnică</div>
+          <div class="flow-sub">AutoCAD, debitare optimizată</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#5ec97a33">
+          <div class="flow-num" style="color:#5ec97a">04</div>
+          <div class="flow-title">Producție Atelier</div>
+          <div class="flow-sub">Debitare, sudură, finisare</div>
+        </div>
+      </div>
+      <div class="flow-arrow"><i class="ti ti-chevron-right"></i></div>
+      <div class="flow-step">
+        <div class="flow-box" style="border-color:#e0525233">
+          <div class="flow-num" style="color:#e05252">05</div>
+          <div class="flow-title">Implementare</div>
+          <div class="flow-sub">Montaj, recepție, finalizare</div>
+        </div>
+      </div>
+    </div>
+    <div class="why-grid fade-in">
+      <div class="why-item">
+        <div class="why-ico" style="background:var(--grn2)"><i class="ti ti-lock" style="color:var(--grn)"></i></div>
+        <div><h4>Flux unidirecțional</h4><p>Proiectele se mișcă doar înainte. Fiecare departament are acces doar la etapa lui și la cea următoare.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-ico" style="background:#3d2a00"><i class="ti ti-clock" style="color:var(--amber)"></i></div>
+        <div><h4>Deadline-uri vizibile pentru toți</h4><p>Fiecare card afișează data limită cu indicator de urgență. Roșu înseamnă azi sau mâine — imposibil de ignorat.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-ico" style="background:#1e2d4a"><i class="ti ti-list-check" style="color:var(--blue)"></i></div>
+        <div><h4>Task-uri pe proiect</h4><p>Fiecare proiect are o listă de task-uri cu progres automat calculat pe măsură ce le bifezi.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-ico" style="background:#2a1e3d"><i class="ti ti-bell" style="color:#b07fe0"></i></div>
+        <div><h4>Notificări la fiecare tranziție</h4><p>Când un proiect trece la etapa următoare, departamentul destinatar primește notificare push instant.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHY -->
+<section id="why">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-trophy"></i> De ce Saiko PMS?</div>
+    <h2 class="fade-in">Nu e un alt tool<br><span>generic</span></h2>
+    <p class="section-sub fade-in">Construit specific pentru industria de publicitate și semnalistică. Gândit de la zero pentru ateliere, designeri și echipe de montaj — nu adaptat dintr-o soluție universală.</p>
+    <div class="features-grid">
+      <div class="feat fade-in" style="border-color:var(--grn2)">
+        <div class="feat-ico" style="background:var(--grn2)"><i class="ti ti-target" style="color:var(--grn)"></i></div>
+        <h3>Construit pentru industria ta</h3>
+        <p>Terminologia, fluxul, coloanele — totul reflectă exact cum funcționează o companie de publicitate outdoor și semnalistică. Nu generalist, specific.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e2d4a"><i class="ti ti-device-tv" style="color:var(--blue)"></i></div>
+        <h3>TV Mode pentru atelier</h3>
+        <p>Un singur click și interfața se mărește pentru ecranele mari din atelier. Muncitorii văd proiectele de la distanță, fără să se apropie de ecran.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1e3d28"><i class="ti ti-world" style="color:var(--grn)"></i></div>
+        <h3>10 limbi europene</h3>
+        <p>Română, Engleză, Germană, Franceză, Italiană, Spaniolă, Maghiară, Bulgară, Ucraineană, Olandeză. Schimbi limba în 2 secunde din setări.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#3d1e1e"><i class="ti ti-database" style="color:var(--red)"></i></div>
+        <h3>Date în cloud, mereu sigure</h3>
+        <p>Firebase Firestore asigură că nu pierzi niciodată un proiect, o comandă sau un contact. Backup automat, acces de oriunde.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#2a1e3d"><i class="ti ti-pencil" style="color:#b07fe0"></i></div>
+        <h3>Complet personalizabil</h3>
+        <p>Coloanele Kanban, culorile, fonturile, etichetele — totul se poate schimba din interfață. Aplicația se adaptează la tine, nu invers.</p>
+      </div>
+      <div class="feat fade-in">
+        <div class="feat-ico" style="background:#1a2d1a"><i class="ti ti-bolt" style="color:var(--grn)"></i></div>
+        <h3>Rapid, simplu, eficient</h3>
+        <p>Interfață curată, fără meniuri complicate, fără tutoriale. Un angajat nou înțelege cum funcționează în 5 minute. Zero training necesar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- TECH -->
+<section id="tech" style="background:var(--dark)">
+  <div class="section-inner">
+    <div class="section-badge fade-in"><i class="ti ti-code"></i> Tehnologie</div>
+    <h2 class="fade-in">Construit pe<br><span>fundații solide</span></h2>
+    <p class="section-sub fade-in">Tehnologii moderne, dovedite, care garantează performanță și fiabilitate în producție.</p>
+    <div class="tech-grid fade-in">
+      <div class="tech-pill"><i class="ti ti-brand-firebase"></i> Firebase Firestore</div>
+      <div class="tech-pill"><i class="ti ti-refresh"></i> Real-time sync</div>
+      <div class="tech-pill"><i class="ti ti-device-mobile"></i> PWA instalabil</div>
+      <div class="tech-pill"><i class="ti ti-bell"></i> Push Notifications</div>
+      <div class="tech-pill"><i class="ti ti-shield"></i> Autentificare securizată</div>
+      <div class="tech-pill"><i class="ti ti-world"></i> 10 limbi</div>
+      <div class="tech-pill"><i class="ti ti-palette"></i> UI personalizabil</div>
+      <div class="tech-pill"><i class="ti ti-drag-drop"></i> Drag & Drop</div>
+      <div class="tech-pill"><i class="ti ti-device-tv"></i> TV Mode</div>
+      <div class="tech-pill"><i class="ti ti-cloud"></i> Cloud backup</div>
+      <div class="tech-pill"><i class="ti ti-file-code"></i> Single Page App</div>
+      <div class="tech-pill"><i class="ti ti-device-laptop"></i> Responsive</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- CTA -->
+<section style="padding:80px 24px">
+  <div class="cta-section fade-in">
+    <div class="hero-badge" style="margin-bottom:20px;justify-content:center"><i class="ti ti-rocket" style="color:var(--grn)"></i> Gata de utilizare</div>
+    <h2>Începe să lucrezi<br><span>organizat de azi</span></h2>
+    <p>Deschide dashboard-ul, adaugă primul proiect și vezi cum arată producția ta când e organizată corect.</p>
+    <div class="hero-btns">
+      <a href="/index.html" class="btn-primary"><i class="ti ti-layout-kanban"></i> Deschide Dashboard</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="nav-logo-ico" style="width:26px;height:26px;border-radius:6px;font-size:12px;background:var(--grn);display:flex;align-items:center;justify-content:center;font-weight:900;color:#0a0a0a">K</div>
+    <div>
+      <div style="font-size:13px;font-weight:700">Krennic PMS</div>
+      <div style="font-size:10px;color:var(--g4)">Production Management System</div>
+    </div>
+  </div>
+  <div class="footer-copy">© 2025 Krennic PMS. Toate drepturile rezervate.</div>
+  <div class="footer-links">
+    <a href="/index.html">Dashboard</a>
+    <a href="#features">Funcționalități</a>
+    <a href="#flow">Flux</a>
+  </div>
+</footer>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+<script>
+// Fade-in on scroll
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold:0.1});
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
